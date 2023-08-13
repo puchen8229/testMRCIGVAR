@@ -39,8 +39,8 @@ an (n x n x nstep+1 x 3) array containing of impulse response functions with low
 This function calculates the generalized impulse response functions of an estimated MRVAR(n,p,S) for given a shock vector.
 }
 \details{
-\preformatted{              GIRF(shock=SHCK) = mean(Y(resid)) - mean(Y(SHCK))
-}
+\if{html}{\out{<div class="sourceCode">}}\preformatted{              GIRF(shock=SHCK) = mean(Y(resid)) - mean(Y(SHCK))
+}\if{html}{\out{</div>}}
 
 It also generates the bootstrapped confidence intervals.
 }

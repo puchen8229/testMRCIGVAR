@@ -45,7 +45,7 @@
 #' res_e = MRGVARest(res=res_d)
 #' res_e$Summary
 #'
-#' IRF_CB  = irf_MRGVAR_CB1(res=res_e,nstep=10,comb=NA,state=c(1,1),irf="gen1",runs=20,conf=c(0.05,0.95))
+#' IRF_CB  = irf_MRGVAR_CB(res=res_e,nstep=10,comb=NA,state=c(1,1),irf="gen1",runs=20,conf=c(0.05,0.95))
 #' IRF_g = IRF_graph(IRF_CB[[1]],Names=c("P","Q","Pa","Qa"))    #IRF
 #' #IRF_g = IRF_graph(IRF_CB[[2]])   # accumulated IRF
 #' @export
@@ -335,7 +335,7 @@ MRGVARData=function(m,n,p,T,S,W=NA,SESVI=NA,TH=NA,Go=NA,Ao=NA,Bo=NA,Sigmao=NA,Uo
 #' res_e = MRGVARest(res=res_d)
 #' res_e$Summary
 #'
-#' IRF_CB  = irf_MRGVAR_CB1(res=res_e,nstep=10,comb=NA,state=c(1,1),irf="gen1",runs=20,conf=c(0.05,0.95))
+#' IRF_CB  = irf_MRGVAR_CB(res=res_e,nstep=10,comb=NA,state=c(1,1),irf="gen1",runs=20,conf=c(0.05,0.95))
 #' IRF_g = IRF_graph(IRF_CB[[1]],Names=c("P","Q","Pa","Qa"))    #IRF
 #' #IRF_g = IRF_graph(IRF_CB[[2]])   # accumulated IRF
 #' @export
@@ -645,7 +645,7 @@ irf_MRGVAR = function(res=res,state=state,nstep=nstep,comb=comb,irf = c("gen", "
 #' res_e = MRGVARest(res=res_d)
 #' res_e$Summary
 #'
-#' IRF_CB  = irf_MRGVAR_CB1(res=res_e,nstep=10,comb=NA,state=c(1,1),irf="gen1",runs=20,conf=c(0.05,0.95))
+#' IRF_CB  = irf_MRGVAR_CB(res=res_e,nstep=10,comb=NA,state=c(1,1),irf="gen1",runs=20,conf=c(0.05,0.95))
 #' IRF_g = IRF_graph(IRF_CB[[1]],Names=c("P","Q","Pa","Qa"))    #IRF
 #' IRF_g = IRF_graph(IRF_CB[[2]])   # accumulated IRF
 #'
@@ -855,7 +855,7 @@ girf_MRGVAR_RM_CB <- function(res,shock,R,nstep,Omega_hist=NA,resid_method="para
 #'
 #' @param res  : a MRGVAR object obtained from MRGVARData or estimated from MRGVARest.
 #' @param I    : index of the country under investigation.
-#' @param L_V  : a four components vector containing the maxima of the domestic lag and the foreign lag for each regime, respectively.
+#' @param L_V  : a four components vector containing the maxims of the domestic lag and the foreign lag for each regime, respectively.
 #' @param TH_V : a vector containing possible threshold values.
 #' @return     a matrix with different lag specifications and the corresponding values of the model selection criteria.
 #' @examples
@@ -890,7 +890,7 @@ girf_MRGVAR_RM_CB <- function(res,shock,R,nstep,Omega_hist=NA,resid_method="para
 #' @export
 #'
 MRGVAR_Select <- function(res,I,L_V,TH_V) {
-  ##    res   object of MRGVARData2
+  ##    res   object of MRGVARData
   ##    I     index of the equation under investigation, I =1 we investigate the first equation, I = 10 we investigate the 10th equation.
   ##    L_V   maximum of the lags of regimes (4 4 4 4) Regime 1 domestic lags 4   foreign lags 4   regime 2 lags 4  4
   ##    TH_V  vector of threshold values that will be estimated for each chosen lag combinations
@@ -1050,12 +1050,12 @@ MRGVAR_Select <- function(res,I,L_V,TH_V) {
 #' res_e = MRGVARest(res=res_d)
 #' res_e$Summary
 #'
-#' IRF_CB  = irf_MRGVAR_CB1(res=res_e,nstep=10,comb=NA,state=c(1,1),irf="gen1",runs=20,conf=c(0.05,0.95))
+#' IRF_CB  = irf_MRGVAR_CB(res=res_e,nstep=10,comb=NA,state=c(1,1),irf="gen1",runs=20,conf=c(0.05,0.95))
 #' IRF_g = IRF_graph(IRF_CB[[1]],Names=c("P","Q","Pa","Qa"))    #IRF
 #' #IRF_g = IRF_graph(IRF_CB[[2]])   # accumulated IRF
 #'
 #' @export
-irf_MRGVAR_CB1 = function (res, state = c(2, 1), nstep, comb, irf = c("gen", "chol", "chol1", "gen1", "comb1"), G=NA,smat=NA,sigmaNPDS=NA,runs = 200, conf = c(0.05, 0.95),NT = 1)
+irf_MRGVAR_CB = function (res, state = c(2, 1), nstep, comb, irf = c("gen", "chol", "chol1", "gen1", "comb1"), G=NA,smat=NA,sigmaNPDS=NA,runs = 200, conf = c(0.05, 0.95),NT = 1)
 {
     m = res$m
     n = res$n

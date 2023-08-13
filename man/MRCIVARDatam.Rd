@@ -28,14 +28,16 @@ MRCIVARDatam(
 \arguments{
 \item{n}{: number of variables}
 
-\item{p}{: an (S x 2) matrix. Each row of p contains the lag length for the corresponding state and the number of exogenous variables for the state.}
+\item{p}{: an (S x 2) matrix. Each row of p contains the lag length for the corresponding regime and the number of exogenous variables for the regime.}
 
 \item{T}{: number of observations}
 
 \item{S}{: number of regimes}
 
-\item{SESVI}{: index of the switching variable, switching sv_t = Y[t-1,SESVI] > Y[t-2,SESVI]\preformatted{           (n,S,p,T,SESVI) are parameters that have to be provided.
-}}
+\item{SESVI}{: index of the switching variable, switching sv_t = Y[t-1,SESVI] > Y[t-2,SESVI]
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{           (n,S,p,T,SESVI) are parameters that have to be provided.
+}\if{html}{\out{</div>}}}
 
 \item{TH}{: an (S-1) vector of threshold values}
 
@@ -61,12 +63,14 @@ MRCIVARDatam(
 
 \item{d}{: lag delay of the self-exiting switching}
 
-\item{r}{: number of unit roots in the system. (n - r) is then the cointegration rank.\preformatted{          (TH,Bo,Sigmao,Uo,SV) if not provided, they will be generated randomly.
-}}
+\item{r}{: number of unit roots in the system. (n - r) is then the cointegration rank.
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{          (TH,Bo,Sigmao,Uo,SV) if not provided, they will be generated randomly.
+}\if{html}{\out{</div>}}}
 }
 \value{
-\preformatted{ An MRCIVAR object containing the generated data, the used parameters, and the exogenous variables.
-}
+\if{html}{\out{<div class="sourceCode">}}\preformatted{ An MRCIVAR object containing the generated data, the used parameters, and the exogenous variables.
+}\if{html}{\out{</div>}}
 }
 \description{
 This function generates data from an multi-regime cointegrated VAR(p) process with identical cointegration relations and different adjustment speeds and returns a MRCIVAR which is a list containing data and parameters used in the multi regime cointegrated VAR(p) process.

@@ -14,8 +14,8 @@ MRVAR_Select(res, L_V = L_V, TH_V = TH_V)
 \item{TH_V}{: a vector containing the possible threshold values over which the model selection criteria values will be calculated.}
 }
 \value{
-\preformatted{ a matrix with different lag specifications and threshold values as well as the corresponding information criterion values.
-}
+\if{html}{\out{<div class="sourceCode">}}\preformatted{ a matrix with different lag specifications and threshold values as well as the corresponding information criterion values.
+}\if{html}{\out{</div>}}
 }
 \description{
 Calculation of information criteria for MRVAR(n,p,S) models.

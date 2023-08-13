@@ -14,11 +14,11 @@ GVAR_Select(res = res, L_V = L_V, I = I)
 \item{I}{: Index of the country under investigation.}
 }
 \value{
-\preformatted{ : A matrix with different lag specifications and values of the model information criteria.
-}
+\if{html}{\out{<div class="sourceCode">}}\preformatted{ : A matrix with different lag specifications and values of the model information criteria.
+}\if{html}{\out{</div>}}
 }
 \description{
-Calculation of the information criteria of a GVAR country models for a given range maximum lags.
+Calculation of the information criteria of a GVAR country models for a given range of maximum lags.
 }
 \examples{
 

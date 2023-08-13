@@ -33,8 +33,10 @@ MRVARData(
 
 \item{S}{: number of regimes}
 
-\item{SESVI}{: index of the switching variable\preformatted{           (n,S,p,T,SESVI) must be provided.
-}}
+\item{SESVI}{: index of the switching variable
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{           (n,S,p,T,SESVI) must be provided.
+}\if{html}{\out{</div>}}}
 
 \item{TH}{: an (S-1)-vector of threshold values}
 
@@ -58,12 +60,14 @@ MRVARData(
 
 \item{Do}{: a (T, n, S) array of extra exogenous components (not used with value zero)}
 
-\item{d}{: lag delays of the self-exiting switching variable.\preformatted{         (TH,Bo,Co,Sigmao,Uo,SV,type) if not provided, they will be generated randomly.
-}}
+\item{d}{: lag delays of the self-exiting switching variable.
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{         (TH,Bo,Co,Sigmao,Uo,SV,type) if not provided, they will be generated randomly.
+}\if{html}{\out{</div>}}}
 }
 \value{
-\preformatted{ an MRVAR(n,p,S) object that is a list containing the generated data, the used parameters and the exogenous variables.
-}
+\if{html}{\out{<div class="sourceCode">}}\preformatted{ an MRVAR(n,p,S) object that is a list containing the generated data, the used parameters and the exogenous variables.
+}\if{html}{\out{</div>}}
 }
 \description{
 This function generates data from an multi-regime stationary VAR(p) process and returns an MRVAR(n,p,S) object that is a list containing data and the parameters used in the MRVAR(n,p,S) process.

@@ -33,7 +33,7 @@ irf_MRCIVAR_CB(
 \item{conf}{a vector of the tail probabilities of the confidence interval.}
 }
 \value{
-A list of impulse reaponse function in two regimes and the bootstrap parameters.
+A list of impulse response function in two regimes and the bootstrap parameters.
 }
 \description{
 This function calculates the regime specific impulse response functions with confidence bands, using Bo[,,,s] and Sigma[,,s] matrices of the estimated MRCIVAR.

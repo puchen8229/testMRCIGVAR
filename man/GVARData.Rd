@@ -26,25 +26,29 @@ GVARData(
 
 \item{n}{: number of countries/units}
 
-\item{p}{: an (n x 3) matrix in which each row contains the lag length of the domestic variables, the lag length of the foreign variables and the number of exogenous variables.}
+\item{p}{: an (n x 3) matrix in which each row contains the lag length of the domestic variables, the lag length of the foreign variables, and the number of exogenous variables.}
 
-\item{T}{: number of observations\preformatted{           (m,n,p,T) are parameters which must be provided.
-}}
+\item{T}{: number of observations
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{           (m,n,p,T) are parameters which must be provided.
+}\if{html}{\out{</div>}}}
 
 \item{W}{: an (n x n) weighting matrix. w_ij is the weight of foreign country j in the foreign variables of i-th country diag(W)=0}
 
 \item{r_npo}{: an (m, p, n) array collecting the roots of the characteristic polynomials in Lags for each of the m dimensional  variable across n countries.}
 
-\item{Ao}{: an (m, m, p, n) array collecting the off-diagonal block of coefficients which coefficients of foreign variables.}
+\item{Ao}{: an (m, m, p, n) array collecting the off-diagonal block of coefficients that are coefficients of the foreign variables.}
 
-\item{Bo}{: an (m, m, p, n) array collecting the coefficients of domestic variables.}
+\item{Bo}{: an (m, m, p, n) array collecting the coefficients of the domestic variables.}
 
 \item{Co}{: an (m, k+1, n) array collecting the coefficients of the deterministic components of the n countries.}
 
 \item{Uo}{: an (T x mn) matrix of the temporally independent innovations}
 
-\item{Sigmao}{: an (mn x mn) matrix of the covariance matrix of the GVAR(m,n,p)\preformatted{           (W,r_npo,Ao,Bo,Uo,Sigmao) if not provided, they will be generated randomly.
-}}
+\item{Sigmao}{: an (mn x mn) matrix of the covariance matrix of the GVAR(m,n,p)
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{           (W,r_npo,Ao,Bo,Uo,Sigmao) if not provided, they will be generated randomly.
+}\if{html}{\out{</div>}}}
 
 \item{type}{: types of deterministic components: "const", "none", "exog0", and "exog1" are the options.}
 
@@ -53,11 +57,11 @@ GVARData(
 \item{mu}{: if type = "const" mu has the same dimension as Co. It contains the means of the time series in the system.}
 }
 \value{
-\preformatted{ a GVAR object which is a list("Y","X","Uo","G","C","Sigmao","r_npo","Ao","Bo","Co","W","m","n","p","mu","check","type") containing the generated data, the used parameters and the input exogenous variables.
-}
+\if{html}{\out{<div class="sourceCode">}}\preformatted{ a GVAR object which is a list("Y","X","Uo","G","C","Sigmao","r_npo","Ao","Bo","Co","W","m","n","p","mu","check","type") containing the generated data, the used parameters, and the inputted of exogenous variables.
+}\if{html}{\out{</div>}}
 }
 \description{
-This function will generate data from a stationary global vector auto regressive process and return a GVAR(p) object containing data and parameters used in the GVAR(p) process.
+This function generates data from a stationary global vector auto regressive process and return a GVAR(m,n,p) object containing data and parameters used in the GVAR(m,n,p) process.
 }
 \examples{
 

@@ -1,6 +1,6 @@
 #' Data generating process of CIVAR(p)
 #'
-#' This function generates data from a cointegrated vector autoregressive process CIVAR(p) and returns CIVAR object that is a list containing data and parameters used in the CIVAR(p) process.
+#' This function generates data from a cointegrated vector autoregressive process CIVAR(p) and returns CIVAR(p) object that is a list containing data and parameters used in the CIVAR(p) process.
 #'
 #' @param n     : number of variables
 #' @param p     : lag length
@@ -8,7 +8,7 @@
 #' @param r_np  : an (n x p) matrix of roots of the characteristic polynomials of n independent AR(p)-processes. An element 1 in a row implies a unit root process. If the matrix is not provided, it will be generated randomly with one unit root in the first row.
 #' @param A     : an (n x n) full rank transformation matrix that is used to generate correlated a CIVAR(p) from the n independent AR(p) processes with unit roots.
 #' @param B     : an (n,n,p) array containing the coefficients of the CIVAR(p) process. If B is not given, it will be calculated out of r_np and A.
-#' @param Co    : an (n,k+1) matrix containing coefficients of deterministic components in a CIVAR(p) process. For type="none" Co = 0*(1:n), for type="const" Co is an n vector, for type="exog0" Co is a (n,k) matrix, andfor type="exog1" Co is an (n,1+k) matrix.
+#' @param Co    : an (n,k+1) matrix containing coefficients of deterministic components in a CIVAR(p) process. For type="none" Co = 0*(1:n), for type="const" Co is an n vector, for type="exog0" Co is a (n,k) matrix, and for type="exog1" Co is an (n,1+k) matrix.
 #' @param C1    : an (n,1) matrix containing coefficients of the trend component. C1 = 0 if there is no trend in the data.
 #' @param U     : residuals, if it is not NA it will be used as input to generate the CIVAR(p)
 #' @param Sigma : an n x n covariance matrix of the CIVAR(p)
@@ -260,7 +260,7 @@ CIVARData <- function (n, p, T, r_np, A, B, Co, C1,U, Sigma, type, X, mu, Yo, cr
 #'
 #' This function estimates parameters of a specified CIVAR(p) model based on provided data.
 #'
-#' @param  res  :an object of CIVAR(p) containing the components which are the output of CIVARData including as least: n, p, Y, crk, and optionally X and type.
+#' @param  res  :an object of CIVAR(p) containing the components which are the output of CIVARData including at least: n, p, Y, crk, and optionally X and type.
 #' @return res  an object of CIVAR(p) containing estimated parameter values, AIC, BIC, LH and the estimated VECM in regression format.
 #' @examples
 #' p = 3
@@ -373,10 +373,11 @@ CIVARest <- function (res)
 #' @param q     : The significance level
 #' @param Dxflag : A flag indicating if the conditioning variables enter the cointegration space
 #' @param X     : The conditioning variables
-#' @return        A list containing: the result of Johansen test, VECM in regression format, lambda, beta, PI, GAMMA, model, P, s
+#' @param CZ    : Common factor variables in CIGVAR and MRCIGVAR
+#' @return        A list containing: the result of the Johansen test, VECM in regression format, lambda, beta, PI, GAMMA, model, P, s
 #'
 #' @export
-MRCVECMest2 <- function (y, x, s, model = c("I", "II", "III","IV", "V"), type = c("eigen", "trace"), crk = 2, P = matrix(2, 2, 2), q = 0.95, Dxflag = 0, X = NA)
+MRCVECMest2 <- function (y, x, s, model = c("I", "II", "III","IV", "V"), type = c("eigen", "trace"), crk = 2, P = matrix(2, 2, 2), q = 0.95, Dxflag = 0, X = NA,CZ=NA)
 {
   y <- as.matrix(y)
   if (q != 0.9 && q != 0.95 && q != 0.99) {
@@ -401,6 +402,12 @@ MRCVECMest2 <- function (y, x, s, model = c("I", "II", "III","IV", "V"), type = 
   if (!anyNA(s)) {
     St = s[(p + 1):length(s)]
     NSt = 1 - s[(p + 1):length(s)]
+  }
+  if (!anyNA(CZ)) {
+    y = cbind(CZ,y);
+    kz = ncol(CZ);
+  } else {
+    kz = 0
   }
   if (!sum(abs(x)) == 0) {
     z <- cbind(y, x)
@@ -428,14 +435,12 @@ MRCVECMest2 <- function (y, x, s, model = c("I", "II", "III","IV", "V"), type = 
     else ZxII = Zx
     Z = cbind(ZyI, ZxI)
     Z_2 = cbind(ZyII, ZxII)
-    if (Dxflag == 0) {
-      Z2 <- Z[, -c(1:N1, P[1, 1] * N1 + 1:NN1)]
-      ZS_2 <- Z_2[, -c(1:N1, P[2, 1] * N1 + 1:NN1)]
-    }
-    else {
-      Z2 <- Z[, -c(1:N1)]
-      ZS_2 <- Z_2[, -c(1:N1)]
-    }
+
+    #Z2   <-   Z[, -c(1:N1, P[1, 1] * N1 + 1:NN1)]
+    #ZS_2 <- Z_2[, -c(1:N1, P[2, 1] * N1 + 1:NN1)]
+    Z2 <-      Z[, -c(1:(kz+N1), P[1, 1] * (kz+N1) + 1:NN1)]
+    ZS_2 <-  Z_2[, -c(1:(kz+N1), P[2, 1] * (kz+N1) + 1:NN1)]
+
   }
   else {
     z = y
@@ -462,8 +467,11 @@ MRCVECMest2 <- function (y, x, s, model = c("I", "II", "III","IV", "V"), type = 
   M1 <- ncol(as.matrix(z))
   T <- nrow(as.matrix(z))
   MM1 = ncol(Z)
-  Y0 <- Z[, c(1:N1)]
-  Z1 <- z[-T, ][p:(T - 1), ]
+  Y0 <- Z[, kz+c(1:N1)]
+  if (Dxflag==1)   Z1 <- z[-T, ][p:(T - 1), ]
+  if (Dxflag==0)   Z1 <- z[-T,1:(kz+N1)][p:(T - 1), ]
+  #Z1 <- z[-T, ][p:(T - 1), ]
+  M1 <- ncol(as.matrix(Z1))
   if (!anyNA(s))
     Z2 = cbind(St * Z2, NSt * ZS_2)
   T1 <- nrow(as.matrix(Y0))
@@ -521,23 +529,23 @@ MRCVECMest2 <- function (y, x, s, model = c("I", "II", "III","IV", "V"), type = 
     Z2 = cbind(Z2, lT, Trend)
   }
   if (ncol(Z2)>0) {
-
-  M00 <- crossprod(Y0)/T1
-  M11 <- crossprod(Z1)/T1
-  M22 <- crossprod(Z2)/T1
-  M01 <- crossprod(Y0, Z1)/T1
-  M02 <- crossprod(Y0, Z2)/T1
-  M10 <- crossprod(Z1, Y0)/T1
-  M20 <- crossprod(Z2, Y0)/T1
-  M12 <- crossprod(Z1, Z2)/T1
-  M21 <- crossprod(Z2, Z1)/T1
-  M22inv <- solve(M22)
-  R0 <- Y0 - t(M02 %*% M22inv %*% t(Z2))
-  R1 <- Z1 - t(M12 %*% M22inv %*% t(Z2))
+    Z2 <- ShiftZ2(Z2,kz,N1,P[1,1]-1)
+    M00 <- crossprod(Y0)/T1
+    M11 <- crossprod(Z1)/T1
+    M22 <- crossprod(Z2)/T1
+    M01 <- crossprod(Y0, Z1)/T1
+    M02 <- crossprod(Y0, Z2)/T1
+    M10 <- crossprod(Z1, Y0)/T1
+    M20 <- crossprod(Z2, Y0)/T1
+    M12 <- crossprod(Z1, Z2)/T1
+    M21 <- crossprod(Z2, Z1)/T1
+    M22inv <- solve(M22)
+    R0 <- Y0 - t(M02 %*% M22inv %*% t(Z2))
+    R1 <- Z1 - t(M12 %*% M22inv %*% t(Z2))
   }
   if (ncol(Z2)==0) {
-     R0 = Y0
-     R1 = Z1
+    R0 = Y0
+    R1 = Z1
   }
   S00 <- crossprod(R0)/T1
   S01 <- crossprod(R0, R1)/T1
@@ -563,10 +571,10 @@ MRCVECMest2 <- function (y, x, s, model = c("I", "II", "III","IV", "V"), type = 
   if (crk > 0) {
     CI = Z1 %*% beta
     if (ncol(Z2)>0) {
-       VECM <- stats::lm(Y0 ~ 0 + CI + Z2)
-       VECMS <- summaryCIVAR(lm1 = VECM, sname = "Z2")
+      VECM <- stats::lm(Y0 ~ 0 + CI + Z2)
+      VECMS <- summaryCIVAR(lm1 = VECM, sname = "Z2")
     }
-  if (ncol(Z2)==0) {
+    if (ncol(Z2)==0) {
       VECM <- stats::lm(Y0 ~ 0 + CI )
       VECMS <- summaryCIVAR(lm1 = VECM, sname = "")
     }
@@ -575,7 +583,7 @@ MRCVECMest2 <- function (y, x, s, model = c("I", "II", "III","IV", "V"), type = 
   if (crk == 0) {
     CI = 0
     if (ncol(Z2)>0) {
-        VECM <- stats::lm(Y0 ~ 0 + Z2)
+      VECM <- stats::lm(Y0 ~ 0 + Z2)
     }
     if (ncol(Z2)==0) {
       VECM <- stats::lm(Y0 ~ 0)
@@ -708,6 +716,368 @@ MRCVECMest2 <- function (y, x, s, model = c("I", "II", "III","IV", "V"), type = 
 }
 
 
+#' Estimation of a two regime conditional vector error correction model.
+#'
+#' This function estimates the unknown parameters of a two regime conditional VECM based on provided data. The cointegrating vectors are identical in the two regimes but the adjustment speeds are different in the two regimes.
+#'
+#' @param y	: data matrix of the endogenous variables
+#' @param x	: data matrix of the conditioning variables. If x is missing, it will estimate an unconditional VECM.
+#' @param s     : the series of state variable with values (0,1) for the two regimes. Missing s implies single regime VECM.
+#' @param model : It assumes one of the values in c("I","II","III","IV","V") corresponding to the five cases in the Johansen test.
+#' @param type  : c("eigen", "trace") corresponding to the trace test or the max eigenvalue test
+#' @param crk   : cointegration rank
+#' @param P     : a (2 x 2) matrix containing the lag of the cointegrated VAR process. The first row is the lag of the first regime and the number of exogenous variables. If the second row is zero, this is a one regime VECM.
+#' @param q     : The significance level used
+#' @param Dxflag : a flag indicating if the conditioning variables enter the cointegration space
+#' @param X     : the exogenous stationary variables
+#' @param CZ    : the exogenous non-stationary common factors
+#' @return      : a list containing: the result of JH test, VECM in regression format, lambda, beta, PI, GAMMA, model, P, s
+#' @export
+MRCVECMestm <- function (y, x, s, model = c("I", "II", "III", "IV", "V"), type = c("eigen", "trace"), crk = 2, P = matrix(2, 2, 2), q = 0.95, Dxflag = 0, X = X, CZ=NA)
+{
+  y <- as.matrix(y)
+  if (q != 0.9 && q != 0.95 && q != 0.99) {
+    return("please correct significance level")
+
+  }
+  S = 2
+  p <- as.integer(max(P))
+  pmin <- as.integer(min(P))
+  N1 <- ncol(as.matrix(y))
+  NN1 <- ncol(as.matrix(x))
+  N <- ncol(as.matrix(y))
+  n = N
+  if (N1 < crk) {
+    return("y's dimension must be larger than crk")
+
+  }
+  if (missing(s)) {
+    s = NA
+  }
+  if (missing(Dxflag)) {
+    Dxflag = 0
+  }
+  if (!anyNA(s)) {
+    St = s[(p + 1):length(s)]
+    NSt = 1 - s[(p + 1):length(s)]
+  }
+  if (!anyNA(CZ)) {
+    y = cbind(CZ,y);
+    kz = ncol(CZ);
+  } else {
+    kz = 0
+  }
+  if (!sum(abs(x)) == 0) {
+    z <- cbind(y, x)
+    Zy <- Embed(diff(y), p, prefix = "d")
+    Zx <- Embed(diff(x), p, prefix = "d")
+    if (P[1, 1] < p) {
+      Aa = P[1, 1] * N1 + (1:((p - P[1, 1]) * N1))
+      Zy1 = Zy[, -Aa]
+    }
+    else Zy1 = Zy
+    if (P[1, 2] < p) {
+      Bb = P[1, 2] * NN1 + (1:((p - P[1, 2]) * NN1))
+      Zx1 = Zx[, -Bb]
+    }
+    else Zx1 = Zx
+    if (P[2, 1] < p) {
+      Aa = P[2, 1] * N1 + (1:((p - P[2, 1]) * N1))
+      Zy2 = Zy[, -Aa]
+    }
+    else Zy2 = Zy
+    if (P[2, 2] < p) {
+      Bb = P[2, 2] * NN1 + (1:((p - P[2, 2]) * NN1))
+      Zx2 = Zx[, -Bb]
+    }
+    else Zx2 = Zx
+    Z = cbind(Zy1, Zx1)
+    Z_2 = cbind(Zy2, Zx2)
+
+    Z2 <-     Z[, -c(1:(kz+N1), P[1, 1] * (kz+N1) + 1:NN1)]
+    ZS_2 <- Z_2[, -c(1:(kz+N1), P[2, 1] * (kz+N1) + 1:NN1)]
+
+
+  }
+  else {
+    z = y
+    Z = Embed(diff(y), p, prefix = "d")
+    if (Dxflag == 0) {
+      Z2 <- Z[, -c(1:N1)]
+      ZS_2 <- Z2
+      Z2 <- Z2[, 1:((P[1, 1] - 1) * n)]
+      ZS_2 <- ZS_2[, 1:((P[2, 1] - 1) * n)]
+    }
+    else {
+      Z2 <- Z[, -c(1:N1)]
+      Zs_2 <- Z2
+      Z2 <- Z2[, 1:((P[1, 1] - 1) * n)]
+      ZS_2 <- ZS_2[, 1:((P[2, 1] - 1) * n)]
+    }
+  }
+
+  T <- nrow(as.matrix(z))
+  MM1 = ncol(Z)
+  Y0 <- Z[, kz+c(1:N1)]
+  if (Dxflag==1)   Z1 <- z[-T, ][p:(T - 1), ]
+  if (Dxflag==0)   Z1 <- z[-T,1:(kz+N1)][p:(T - 1), ]
+  #Z1 <- z[-T, ][p:(T - 1), ]
+  #M1 <- ncol(as.matrix(z))
+  M1 <- ncol(as.matrix(Z1))
+  if (!anyNA(s))
+    Z2 = cbind(St * Z2, NSt * ZS_2)
+  T1 <- nrow(as.matrix(Y0))
+  lT = (1:T1)/(1:T1)
+  Trend <- matrix(1:T1, T1, 1)
+  if (model == "I") {
+    Y0 = Y0
+    Z1 = Z1
+    Z2 = Z2
+    if (!anyNA(X) & !anyNA(s)) {
+      StX  = as.matrix(St * X[(nrow(X) - nrow(Z2) + 1):nrow(X), , 1]); colnames(StX)  = paste0(colnames(X),"1")
+      NStX = as.matrix(NSt *X[(nrow(X) - nrow(Z2) + 1):nrow(X), , 2]); colnames(NStX) = paste0(colnames(X),"2")
+      Z2 = cbind(Z2,StX,NStX)
+      #Z2 = cbind(Z2, St * X[(nrow(X) - nrow(Z2) + 1):nrow(X), , 1], NSt * X[(nrow(X) - nrow(Z2) + 1):nrow(X),, 2])
+    }
+    if (!anyNA(X) & anyNA(s))
+      Z2 = cbind(Z2, X[(nrow(X) - nrow(Z2) + 1):nrow(X),
+      ])
+  }
+  if (model == "II") {
+    Y0 = Y0
+    Z1 = cbind(T1, Z1)
+    Z2 = Z2
+  }
+  if (model == "III") {
+    Y0 = Y0
+    Z1 = Z1
+    if (!anyNA(s) & !anyNA(X)) {
+      StX  = as.matrix(St * X[(nrow(X) - nrow(Z2) + 1):nrow(X), , 1]); colnames(StX)  = paste0(colnames(X),"1")
+      NStX = as.matrix(NSt *X[(nrow(X) - nrow(Z2) + 1):nrow(X), , 2]); colnames(NStX) = paste0(colnames(X),"2")
+
+
+      Z2 = cbind(Z2,St,StX,NSt,NStX)
+      #Z2 = cbind(Z2, St, St * X[(nrow(X) - nrow(Z2) + 1):nrow(X), , 1,drop=FALSE], NSt, NSt * X[(nrow(X) - nrow(Z2) + 1):nrow(X), , 2,drop=FALSE])
+
+    }
+    if (!anyNA(s) & anyNA(X))
+      Z2 = cbind(Z2, St, NSt)
+    if (anyNA(s) & !anyNA(X))
+      Z2 = cbind(Z2, rep(1, T1), X[(nrow(X) - nrow(Z2) +
+                                      1):nrow(X), ])
+    if (anyNA(s) & anyNA(X))
+      Z2 = cbind(Z2, rep(1, T1))
+  }
+  if (model == "IV") {
+    Y0 = Y0
+    Z1 = cbind(Trend, Z1)
+    Z2 = cbind(Z2, lT)
+  }
+  if (model == "V") {
+    Y0 = Y0
+    Z1 = cbind(Z1)
+    Z2 = cbind(Z2, lT, Trend)
+  }
+  if (ncol(Z2)>0) {
+    Z2 <-  ShiftZ2m(Z2,kz,N1,max(P[,1:2])-1,min(P[,1:2])-1)
+
+    M00 <- crossprod(Y0)/T1
+    M11 <- crossprod(Z1)/T1
+    M22 <- crossprod(Z2)/T1
+    M01 <- crossprod(Y0, Z1)/T1
+    M02 <- crossprod(Y0, Z2)/T1
+    M10 <- crossprod(Z1, Y0)/T1
+    M20 <- crossprod(Z2, Y0)/T1
+    M12 <- crossprod(Z1, Z2)/T1
+    M21 <- crossprod(Z2, Z1)/T1
+    M22inv <- solve(M22)
+    R0 <- Y0 - t(M02 %*% M22inv %*% t(Z2))
+    R1 <- Z1 - t(M12 %*% M22inv %*% t(Z2))
+  }
+
+  if (ncol(Z2) == 0) {
+    R0 = Y0
+    R1 = Z1
+  }
+
+  S00 <- crossprod(R0)/T1
+  S01 <- crossprod(R0, R1)/T1
+  S10 <- crossprod(R1, R0)/T1
+  S11 <- crossprod(R1)/T1
+  Ctemp <- chol(S11, pivot = TRUE)
+  pivot <- attr(Ctemp, "pivot")
+  oo <- order(pivot)
+  C <- t(Ctemp[, oo])
+  Cinv <- solve(C)
+  S00inv <- solve(S00)
+  valeigen <- eigen(Cinv %*% S10 %*% S00inv %*% S01 %*% t(Cinv))
+  lambda <- Re(valeigen$values)
+  e <- Re(valeigen$vector)
+  V <- t(Cinv) %*% e
+  Vorg <- V
+  V <- sapply(1:M1, function(j) V[, j]/V[1, j])
+  PI <- S01 %*% solve(S11)
+  GAMMA <- M02 %*% M22inv - PI %*% M12 %*% M22inv
+  beta <- as.matrix(V[, 1:crk])
+  beta0 <- as.matrix(V[, 1:crk])
+  if (crk > 0) {
+    NLm = stats::nlm(f, as.vector(beta0), beta, Z1, St, NSt, Y0, Z2)
+    if ( NLm$code>2 )  betaS <- beta0  else   betaS <- NLm$estimate
+
+    NLmcode = NLm$code
+    dim(betaS) = dim(beta)
+    for (i in 1:ncol(as.matrix(betaS))) betaS[, i] = betaS[, i]/(betaS[1, i])
+    CI = Z1 %*% betaS
+    estimation <- stats::lm(Y0 ~ 0 + CI + Z2)
+    CI1 = CI * St
+    CI2 = CI * NSt
+    VECM1 <- stats::lm(Y0 ~ 0 + CI1 + CI2 + Z2)
+    VECM1S <- summaryCIVAR(lm1 = VECM1, sname = "Z2")
+    alphaS_1 = t(VECM1$coefficients[1:crk, ])
+    alphaS_2 = t(VECM1$coefficients[(1 + crk):(2 * crk),])
+    if (dim(alphaS_1)[1] == 1)
+      alphaS_1 <- t(alphaS_1)
+    if (dim(alphaS_2)[1] == 1)
+      alphaS_2 <- t(alphaS_2)
+  }
+  if (crk == 0) {
+    CI = 0
+    estimation <- stats::lm(Y0 ~ 0 + Z2)
+  }
+  E = -T1 * log(1 - lambda)
+  E = E[1:N]
+  resultsvecm <- summary(estimation)
+  if (model == "I") {
+    Tab <- Tab1
+  }
+  if (model == "II") {
+    Tab <- Tab2
+  }
+  if (model == "III") {
+    Tab <- Tab3
+  }
+  if (model == "IV") {
+    Tab <- Tab4
+  }
+  if (model == "V") {
+    Tab <- Tab5
+  }
+  b = c(1:12)
+  for (i in 1:12) {
+    b[i] = Tab[2 * (i - 1) + 1, 2 + M1 - N1]
+  }
+  a = c(1:12)
+  for (i in 1:12) {
+    a[i] = Tab[2 * i, 2 + M1 - N1]
+  }
+  if (type == "eigen") {
+    critical_vals = b
+    M = matrix(0, N, 1)
+    j = 1
+    rank = 0
+    while (j <= N && E[j] > critical_vals[N + 1 - j]) {
+      M[j, ] = M[j, ] + 1
+      j = j + 1
+      rank = rank + 1
+    }
+    erg <- cbind(E, critical_vals[N:1])
+    colnames(erg) <- c("teststatistic", "critical_value")
+    if (N > 1) {
+      rownames(erg) <- c("crk <= 0 |", paste("crk <= ",
+                                             1:(N - 1), " |", sep = ""))
+    }
+    if (N == 1) {
+      rownames(erg) <- c("crk <= 0 |")
+    }
+    coint_rank <- paste("Johansen-Test (with maximum-eigenvalue-teststatistic) indicates",
+                        rank, "cointegrating equation(s) at the", 1 -
+                          q, "level")
+    result <- new.env()
+    result$erg = erg
+    result$estimation = estimation
+    result$VECM1 = VECM1
+    result$VECM1S = VECM1S
+    result$lambda = E
+    result$z = z
+    result$Z2 = Z2
+    result$Z1 = Z1
+    result$St = St
+    result$NSt = NSt
+    result$R0 = R0
+    result$R1 = R1
+    result$Y0 = Y0
+    result$beta = beta
+    result$betaS = betaS
+    result$alphaS = alphaS = list(alphaS_1, alphaS_2)
+    result$NLmcode = NLmcode
+    result$PI = PI
+    result$GAMMA = GAMMA
+    result$model = model
+    result$P = P
+    result$NN1 = NN1
+    result$s = s
+    rr <- as.list(result)
+    return(rr)
+  }
+  else {
+    type = "trace"
+    critical_vals = a
+    stat = matrix(0, N, 1)
+    for (i in 1:N) {
+      sum = 0
+      for (j in i:N) {
+        sum = sum + E[j]
+      }
+      stat[i] = sum
+    }
+    M = matrix(0, N, 1)
+    j = 1
+    rank = 0
+    while (stat[j] > critical_vals[N + 1 - j] && j <= N) {
+      M[j, ] = M[j, ] + 1
+      j = j + 1
+      rank = rank + 1
+    }
+    erg <- cbind(stat, critical_vals[N:1])
+    colnames(erg) <- c("teststatistic", "critical_value")
+    if (N > 1) {
+      rownames(erg) <- c("crk <= 0 |", paste("crk <= ",
+                                             1:(N - 1), " |", sep = ""))
+    }
+    if (N == 1) {
+      rownames(erg) <- c("crk <= 0 |")
+    }
+    coint_rank <- paste("Johansen-Test (with trace-teststatistic) indicates",
+                        rank, "cointegrating equation(s) at the", 1 -
+                          q, "level")
+    result <- new.env()
+    result$erg = erg
+    result$estimation = estimation
+    result$VECM1 = VECM1
+    result$VECM1S = VECM1S
+    result$lambda = E
+    result$z = z
+    result$Z2 = Z2
+    result$Z1 = Z1
+    result$St = St
+    result$NSt = NSt
+    result$R0 = R0
+    result$R1 = R1
+    result$Y0 = Y0
+    result$beta = beta
+    result$betaS = betaS
+    result$alphaS = alphaS = list(alphaS_1, alphaS_2)
+    result$NLmcode = NLmcode
+    result$PI = PI
+    result$GAMMA = GAMMA
+    result$model = model
+    result$P = P
+    result$NN1 = NN1
+    result$s = s
+    rr <- as.list(result)
+    return(rr)
+  }
+}
 
 
 #' This function replaces the variable names in an lm output.
@@ -752,7 +1122,7 @@ summaryCIVAR <- function(lm1=lm1,sname ="Z2\\[,4:9\\]") {
 #'
 #'
 #' @section Details:
-#' This function runs a likelihood ratio test of linear restrictions on \deqn{\alpha} and \deqn{\beta} in a CIVAR model in the following form:
+#' This function runs a likelihood ratio test of linear restrictions on $\alpha$ and $\beta$ in a CIVAR model in the following form:
 #'		\deqn{vec(\alpha') = G \psi,  vec(\beta) = H\phi + h}
 #'
 #'        example 1 (restrictions on alpha) test of exogeneity
@@ -770,7 +1140,7 @@ summaryCIVAR <- function(lm1=lm1,sname ="Z2\\[,4:9\\]") {
 #'                  G          is 40 x 40 identity matrix, implying there is no restriction on alpha
 #'                  psi        40 x 1 vector (free varying parameters not appearing in the specification but implied by the identity matrix G
 #'                  vec(beta)  is 45 x 1 vector   ( N = 8 crk = 5, defined by the model )
-#'                  H          is 45 x 2 matrix that picks out the elements under restrictions ( two colunms out of the identity matrix ) a zero row in H and the corresponding h implies zero-restrictions on beta.
+#'                  H          is 45 x 2 matrix that picks out the elements under restrictions ( two columns out of the identity matrix ) a zero row in H and the corresponding h implies zero-restrictions on beta.
 #'                             ones in a row of H and zero in the corresponding h implies non-restricted beta.
 #'                  phi        2  x 1  vector (free varying parameters not appearing in the specification but implied by h =0
 #'                  h          45 x 1  non zero elements in this vector together with the zero elements in the corresponding row in H are the normalization conditions.
@@ -1435,26 +1805,38 @@ abLRtest2 =function (y,x,model = c("I","II","III","IV","V"), bnorm = c("1","2"),
 #' @param beta The cointegration vectors
 #' @param q A vector specifying different type of VECMs
 #' @param s The indicator of multi regime VECMs
+#' @param kz The number of exogenous common factors
+#' @param Dxflag Indicator whether the foreign variables enter the cointegration space
 #'
 #' @return A list of (A, B, C) with B the auto regression parameter matrix, C the parameter of the deterministic components, and A the parameter matrix of foreign variables for CIGVAR.
 #' @export
-VECM2VAR <- function (param, beta, q = c(1, 2, 2, 2, 2), s = NA)
+VECM2VAR <- function(param, beta, q = c(1, 2, 2, 2, 2),s=NA,kz=0,Dxflag=0)
 {
   m = dim(param)[2]
   VECB = t(param)
+  if (missing(s))  s = NA
   if (anyNA(s)) {
-    if (!q[3] == 0) {
+    if (!q[3] == 0) {   # for GVAR with foreign variables
       B = (1:(m * m * (q[2] + 1))) * 0
       dim(B) = c(m, m, (q[2] + 1))
       A = (1:(m * m * (q[3] + 1))) * 0
+      D = NA
       dim(A) = c(m, m, (q[3] + 1))
       AB = VECB[, 1:q[1]] %*% t(beta)
-      B[, , 1] = AB[, 1:m]
-      A[, , 1] = AB[, (m + 1):(2 * m)]
+      B[, , 1] = AB[, kz+(1:m)]
+      if (Dxflag == 1 ) A[, , 1] = AB[,kz+(m + 1):(2 * m)]
+      if (Dxflag == 0 ) A[, , 1] = A[, , 1]*0
       for (i in 2:(q[2] + 1)) B[, , i] = VECB[, q[1] + ((i - 2) * m + 1):((i - 2) * m + m)]
       for (i in 2:(q[3] + 1)) A[, , i] = VECB[, (q[1] + q[2] * m) + ((i - 2) * m + 1):((i - 2) * m + m)]
+
       B = CIB3B(B)
       A = CIA2A(A)
+      if ( kz > 0 ) {
+        D = (1:(m*kz*(q[2]+1)))*0; dim(D) =c(m,kz,q[2]+1)
+        D[,,1] = AB[,1:kz]
+        for (i in 2:(q[2] + 1)) D[, , i] = VECB[, dim(VECB)[2]-q[2]*kz + (((i - 2) * kz + 1):((i - 2) * kz + kz))]
+        D = CIA2A(D)
+      }
     }
     else {
       B = (1:(m * m * (q[2] + 1))) * 0
@@ -1462,14 +1844,18 @@ VECM2VAR <- function (param, beta, q = c(1, 2, 2, 2, 2), s = NA)
       AB = VECB[, 1:q[1]] %*% t(beta)
       B[, , 1] = AB[, 1:m]
       if (q[2] > 0) {
-        for (i in 2:(q[2] + 1)) B[, , i] = VECB[, q[1] + ((i - 2) * m + 1):((i - 2) * m + m)]
-        B <- CIB3B(CIB = B)   }
-      if (q[2]==0 ) {B[,,1] = B[,,1]+diag(m)}
+        for (i in 2:(q[2] + 1)) B[, , i] = VECB[, q[1] +
+                                                  ((i - 2) * m + 1):((i - 2) * m + m)]
+        B <- CIB3B(CIB = B)
+      }
+      if (q[2] == 0) {
+        B[, , 1] = B[, , 1] + diag(m)
+      }
       A = NA
     }
-    if (dim(param)[1] > q[1] + (q[2] + q[3]) * m)
-      C = as.matrix(t(param)[, (q[1] + (q[2] + q[3]) *
-                                  m + 1):dim(param)[1]])
+    if (dim(param)[1] > q[1] + (q[2] + q[3]) * m + q[2]*kz) {
+      C = as.matrix(t(param)[, (q[1] + (q[2] + q[3]) * m + 1):(dim(param)[1]-q[2]*kz) ])
+    }
     else C = NA
   }
   else {
@@ -1544,7 +1930,7 @@ VECM2VAR <- function (param, beta, q = c(1, 2, 2, 2, 2), s = NA)
       }
     }
   }
-  return(list(B, A, C))
+  return(list(B, A, C, D))
 }
 
 
@@ -2647,10 +3033,13 @@ MIxCIVARData = function(n,p,T,r,k,type,Bo=NA,Y=NA,X=NA,D=NA,Go=NA,B=NA,Sigma = N
   return(RR)
 }
 
-
-
-
-
+#' This function calculates the orthogonal complementary space
+#'
+#' @param alpha : a matrix with independent columns
+#'
+#' @return  the orthogonal complementary matrix
+#' @export
+#'
 alpha_perpf = function(alpha=(alpha)) {
 
   alpha <- as.matrix(alpha)
@@ -2666,6 +3055,18 @@ alpha_perpf = function(alpha=(alpha)) {
 
 
 
+
+#' This function solves AB_SVAR from the reduced form and return the A, B matrices and the sum of squared errors
+#'
+#'
+#' @param x 	  : difference between the reduced form and the AB form
+#' @param A0	  : A matrix in an AB_SVAR model
+#' @param B0    : B matrix in an AB_SVAR model
+#' @param Sigma : Covariance matrix of the reduced form
+#'
+#' @return  difference
+#' @export
+#'
 xABF <-  function(x,A0,B0,Sigma) {
   ### this function solves A and B from the reduced form Sigma for a AB-SVAR
   n = dim(A0)[1]
@@ -2687,9 +3088,17 @@ xABF <-  function(x,A0,B0,Sigma) {
 
 
 
-
-#xABF(x=x0,A0,B0,Sigma)
-
+#' This function solves AB_SVAR from the reduced form and return the A, B matrices and the sum of squared errors
+#'
+#'
+#' @param x0	  : difference between the reduced form and the AB form
+#' @param A0	  : A matrix in an AB_SVAR model
+#' @param B0    : B matrix in an AB_SVAR model
+#' @param Sigma : Covariance matrix of the reduced form
+#'
+#' @return  a list contains A B and the difference
+#' @export
+#'
 ABSVAR = function(x0,A0,B0,Sigma) {
   ## This function solve AB_SVAR from the reduced form and return the A, B matrices and the sum of squared errors
   n =dim(A0)[1]

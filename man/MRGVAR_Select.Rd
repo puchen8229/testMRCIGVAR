@@ -11,13 +11,13 @@ MRGVAR_Select(res, I, L_V, TH_V)
 
 \item{I}{: index of the country under investigation.}
 
-\item{L_V}{: a four components vector containing the maxima of the domestic lag and the foreign lag for each regime, respectively.}
+\item{L_V}{: a four components vector containing the maxims of the domestic lag and the foreign lag for each regime, respectively.}
 
 \item{TH_V}{: a vector containing possible threshold values.}
 }
 \value{
-\preformatted{a matrix with different lag specifications and the corresponding values of the model selection criteria.
-}
+\if{html}{\out{<div class="sourceCode">}}\preformatted{a matrix with different lag specifications and the corresponding values of the model selection criteria.
+}\if{html}{\out{</div>}}
 }
 \description{
 Calculation of information criteria for a MRGVAR model

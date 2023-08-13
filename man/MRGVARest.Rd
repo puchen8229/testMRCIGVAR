@@ -29,7 +29,7 @@ colnames(res_d$Y) = c("P","Q","Pa","Qa")
 res_e = MRGVARest(res=res_d)
 res_e$Summary
 
-IRF_CB  = irf_MRGVAR_CB1(res=res_e,nstep=10,comb=NA,state=c(1,1),irf="gen1",runs=20,conf=c(0.05,0.95))
+IRF_CB  = irf_MRGVAR_CB(res=res_e,nstep=10,comb=NA,state=c(1,1),irf="gen1",runs=20,conf=c(0.05,0.95))
 IRF_g = IRF_graph(IRF_CB[[1]],Names=c("P","Q","Pa","Qa"))    #IRF
 #IRF_g = IRF_graph(IRF_CB[[2]])   # accumulated IRF
 }

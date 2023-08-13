@@ -12,7 +12,7 @@ GW2BoAo(G, W)
 \item{W}{The weighting matrix of the GVAR model}
 }
 \value{
-A list containing the parameter matrices of dometric variables and foreign variables
+A list containing the parameter matrices of domestric variables and foreign variables
 }
 \description{
 Transformation of a global VAR parameter matrix to the country GVAR parameter matrices

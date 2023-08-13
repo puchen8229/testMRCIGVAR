@@ -10,7 +10,7 @@ GVARest(res)
 \item{res}{: an GVAR object that is an output of GVARData including at least: m,n,p,type,Y and optionally X.}
 }
 \value{
-res  : an GVAR object with estimated parameter values, AIC, BIC, AIC_g, BIC_g and LH, where AIC and BIC are n-vectors of the country equations' AIC and BIC and AIG_g amd BIC_g are the GVAR information criteria respectively.
+res  : an GVAR object with estimated parameter values, AIC, BIC, AIC_g, BIC_g and LH, where AIC and BIC are n-vectors of the country equations' AIC and BIC and AIG_g and BIC_g are the GVAR information criteria respectively.
 }
 \description{
 This function estimates the parameters of a specified GVAR(m,n,p) model based on provided data.

@@ -1,17 +1,17 @@
 #' Data generating process of GVAR(m,n,p)
 #'
-#' This function will generate data from a stationary global vector auto regressive process and return a GVAR(p) object containing data and parameters used in the GVAR(p) process.
+#' This function generates data from a stationary global vector auto regressive process and return a GVAR(m,n,p) object containing data and parameters used in the GVAR(m,n,p) process.
 #'
 #' @param m     : number of variables
 #' @param n     : number of countries/units
-#' @param p     : an (n x 3) matrix in which each row contains the lag length of the domestic variables, the lag length of the foreign variables and the number of exogenous variables.
+#' @param p     : an (n x 3) matrix in which each row contains the lag length of the domestic variables, the lag length of the foreign variables, and the number of exogenous variables.
 #' @param T     : number of observations
 #'
 #'                (m,n,p,T) are parameters which must be provided.
 #' @param W     : an (n x n) weighting matrix. w_ij is the weight of foreign country j in the foreign variables of i-th country diag(W)=0
 #' @param r_npo : an (m, p, n) array collecting the roots of the characteristic polynomials in Lags for each of the m dimensional  variable across n countries.
-#' @param Ao    : an (m, m, p, n) array collecting the off-diagonal block of coefficients which coefficients of foreign variables.
-#' @param Bo    : an (m, m, p, n) array collecting the coefficients of domestic variables.
+#' @param Ao    : an (m, m, p, n) array collecting the off-diagonal block of coefficients that are coefficients of the foreign variables.
+#' @param Bo    : an (m, m, p, n) array collecting the coefficients of the domestic variables.
 #' @param Co    : an (m, k+1, n) array collecting the coefficients of the deterministic components of the n countries.
 #' @param Uo    : an (T x mn) matrix of the temporally independent innovations
 #' @param Sigmao : an (mn x mn) matrix of the covariance matrix of the GVAR(m,n,p)
@@ -20,7 +20,7 @@
 #' @param type  : types of deterministic components: "const", "none", "exog0", and "exog1" are the options.
 #' @param X     : (T x k x n ) array of exogenous variables.
 #' @param mu    : if type = "const" mu has the same dimension as Co. It contains the means of the time series in the system.
-#' @return      a GVAR object which is a list("Y","X","Uo","G","C","Sigmao","r_npo","Ao","Bo","Co","W","m","n","p","mu","check","type") containing the generated data, the used parameters and the input exogenous variables.
+#' @return      a GVAR object which is a list("Y","X","Uo","G","C","Sigmao","r_npo","Ao","Bo","Co","W","m","n","p","mu","check","type") containing the generated data, the used parameters, and the inputted of exogenous variables.
 #'
 #' @export
 #'
@@ -220,7 +220,7 @@ GVARData <- function (m, n, p, T, W = NA, r_npo = NA, Ao = NA, Bo = NA, Co = NA,
 #' This function estimates the parameters of a specified GVAR(m,n,p) model based on provided data.
 #'
 #' @param  res  : an GVAR object that is an output of GVARData including at least: m,n,p,type,Y and optionally X.
-#' @return res  : an GVAR object with estimated parameter values, AIC, BIC, AIC_g, BIC_g and LH, where AIC and BIC are n-vectors of the country equations' AIC and BIC and AIG_g amd BIC_g are the GVAR information criteria respectively.
+#' @return res  : an GVAR object with estimated parameter values, AIC, BIC, AIC_g, BIC_g and LH, where AIC and BIC are n-vectors of the country equations' AIC and BIC and AIG_g and BIC_g are the GVAR information criteria respectively.
 #' @examples
 #' n = 5
 #' p = (1:15)*0; dim(p) = c(5,3)
@@ -262,6 +262,7 @@ GVARest <- function (res)  {
   type = res$type
   Bo = res$Bo
   Ao = res$Ao
+
   Co = res$Co
   Pmax = max(p[, 1:2])
   k = max(p[, 3])
@@ -377,6 +378,7 @@ GVARest <- function (res)  {
   res$mu = solve(Gs) %*% C
   res$VAR_domestic = VAR_domestic
   est_result <- list()
+  res$resid = resid
   for (i in 1: n)  est_result[[i]]= summary(VAR_domestic[[i]])
   Summary = list(est_result, LH, AIC, BIC, LH_g, AIC_g, BIC_g)
   names(Summary) = c("Estimation_Result", "Country_LH_function_Value", "Country_AIC", "Country_BIC", "LH_g", "AIC_g", "BIC_g")
@@ -425,7 +427,7 @@ return(G)
 #' @param G The GVAR parameter matrix
 #' @param W The weighting matrix of the GVAR model
 #'
-#' @return A list containing the parameter matrices of dometric variables and foreign variables
+#' @return A list containing the parameter matrices of domestric variables and foreign variables
 #' @export
 GW2BoAo = function(G,W) {
   n = dim(W)[1]
@@ -568,7 +570,7 @@ irf_GVAR_CB =function(res,nstep,comb,irf=c("gen","chol","chol1","gen1","comb1"),
 
 #' GVAR lag selection
 #'
-#' Calculation of the information criteria of a GVAR country models for a given range maximum lags.
+#' Calculation of the information criteria of a GVAR country models for a given range of maximum lags.
 #'
 #'
 #' @param  res  : a GVAR object obtained from GVARData or GVARest.

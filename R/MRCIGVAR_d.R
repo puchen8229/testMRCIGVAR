@@ -5,25 +5,29 @@
 #' @param m     : number of variables in each country/unit
 #' @param n     : number of countries/units
 #' @param S     : number of regimes
-#' @param p     : an (n, 3, S) array, each raw contains the lag length of the domestic variables, the lag length of the foreign variables and the number of the exogenous variables of the corresponding country in the respective regimes.
+#' @param p     : an (n, 3, S) array, each raw contains the lag length of the domestic variables, the lag length of the foreign variables, and the number of the exogenous variables of the corresponding country in the respective regimes.
 #' @param T     : number of observations.
 #' @param W     : an (n x n) weighting matrix. w_ij is the weight of country j in the foreign variables of i-th country diag(W)=0
-#' @param SESVI : an n-vector of indices of the switching variables across n countries. Eg SESVI = seq(1,m*n,m).
+#' @param SESVI : an n-vector of indices of the switching variables across n countries. E.g. SESVI = seq(1,m*n,m).
 #' @param TH    : an (n x S-1) matrix of threshold values
 #' @param Go    : an (mn,mn,p,S) array containing coefficients of MRCIGVAR. Go is constructed from Bo, Ao and W.
 #' @param Ao    : an (m, m, p, n, S) array containing the coefficients of foreign variables
 #' @param Bo    : an (m, m, p, n, S) array containing the coefficients of domestic variables.
 #' @param Co    : an (m , k+1, n, S) array containing the coefficients of the deterministic components of the n countries.
 #' @param Uo    : a (T, mn, S) array of the temporally independent innovations
-#' @param Sigmao : an (mn, mn, S) array of the covariance matrix of MRGVAR(m,n,p,S)
+#' @param Sigmao : an (mn, mn, S) array of the covariance matrix of MRCIGVAR(m,n,p,S)
 #' @param SV    : exogenous switching variables
 #' @param type	: types of the deterministic component. "const", "none", "exog0", and "exog1" are 4 options
-#' @param X	    : a (T x k x n x S) array of exogenous variables.
+#' @param X	    : a (T x k x n x S) array of exogenous stationary variables.
 #' @param Yo    : initial values
 #' @param d     : the time lag between signal and regime-switching
 #' @param r     : an n-vector containing the number of unit root process in each country
-#' @param r_np        : an (m, Pmax, n, S) array containing the roots of the characteristic polynomials of each country.
-#' @param Ncommtrend  : number of common stochastic trends in the MRCIGVAR.
+#' @param r_np  : an (m, Pmax, n, S) array containing the roots of the characteristic polynomials of each country.
+#' @param Ncommtrend : number of common stochastic trends in the MRCIGVAR.
+#' @param DFYflag : indicator whether the foreign variables enter the cointegration space.
+#' @param A       : transformation matrix for common exogenous non-stationary stochastic factors.
+#' @param Ncommfakt : number of the common exogenous non-stationary stochastic factors.
+#' @param uz      : innovations of the common exogenous non-stationary stochastic factors.
 #' @return      an MRGVAR object containing the generated data, the used parameters and the exogenous variables.
 #' \itemize{
 #'    \item Y     : a (T x mn)  matrix of simulated data
@@ -36,49 +40,40 @@
 #'
 #'
 #' @examples
-#' m = 2
-#' n = 3
-#' p = c(2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0); dim(p) = c(5,3,2)
+#' m = 3
+#' n = 5
+#'  p = c(2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0); dim(p) = c(5,3,2)
 #' p = p[1:n,,]; p[,1,] = 3; p[,2,] = 2
 #'
+#' p[2,2,] = 3
 #' TH = c(1:n)*0; dim(TH) = c(1,n)
-#' SESVI = c(1,3,5)
+#' SESVI=rep(1,4,7,10,13)
 #' r  = rep(1,n)
+#' i = 1
+#' S = 2
 #'
-#' ## case of n = 3, m = 2, S = 2   with m: number of variables, n: number of countries.
-#'
-#' res_d <- MRCIGVARData(m=2,n=3,p=p,TH=TH,T=300,S=2, SESVI=c(1,3,5),r=rep(1,3),Ncommtrend=1)
-#' max(abs(res_d$Y))
-#' STAT(res_d$Go[,,,2])
-#' STAT(res_d$Go[,,,1])
-#' res_e  = MRCIGVARestm(res=res_d)
-#'
-#'
-#' T= 300
-#' XX = matrix(rnorm(T*6*2),T*6,2)
-#' dim(XX) = c(T,2,3,2)
-#'
-#' XX = XX*10
+#' T= 200
+#' XX = matrix(rnorm(T*10*2),T*10,2)
+#' dim(XX) = c(T,2,5,2)
 #' p[,3,]=2
 #'
-#' res_d <- MRCIGVARData(m=2,n=3,p=p,TH=TH,T=T,S=2, SESVI=c(1,3,5),type="exog0",r=rep(1,3),Ncommtrend=1,X=XX)
+#' res_d <- MRCIGVARData(m=3,n=5,p=p,TH=TH,T=T,S=2, SESVI=c(1,4,7,10,13),type="exog0",r=rep(1,5),DFYflag=0,Ncommfakt=1,X=XX)    ## m: number of variables, n: number of countries
 #'
 #' max(abs(res_d$Y))
+#' plot(ts(res_d$Y[,1:10]))
 #' STAT(res_d$Go[,,,2])
+#' STAT(res_d$GC[,,,1]);STAT(res_d$GC[,,,2]);
 #' STAT(res_d$Go[,,,1])
+#' max(abs(res_d$Y))
 #'
-#' res_e  = MRCIGVARestm(res=res_d)
+#' Ao=res_d$Ao;Bo=res_d$Bo;Co=res_d$Co;
 #'
-#' res_e$Summary
+#' res_d <- MRCIGVARData(m=3,n=5,p=p,TH=TH,T=T,S=2, SESVI=c(1,4,7,10,13),type="exog0",Ao=Ao,Bo=Bo,Co=Co,r = rep(1,5),DFYflag = 0,Ncommfakt=1,X=XX)    ## m: number of variables, n: number of countries
+#' res_e  = MRCIGVARest(res=res_d)
 #'
-#' IRF_CB = irf_MRCIGVAR_CB(res=res_e, nstep=10, comb=NA, state = c(2,1,1), irf = "gen1", runs = 20, conf = c(0.05, 0.95), NT = 1)
-#'
-#' str(IRF_CB)
-#'
-#' IRF_g = IRF_graph(IRF_CB[[1]])
 #'
 #' @export
-MRCIGVARData <- function(m,n,p,T,S,W=NA,SESVI=NA,TH=NA,Go=NA,Ao=NA,Bo=NA,Sigmao=NA,Uo=NA,SV=NA,type=NA,Co=NA,X=NA,Yo=NA,d=NA,r=NA,r_np=NA,Ncommtrend=NA) {
+MRCIGVARData <- function(m,n,p,T,S,W=NA,SESVI=NA,TH=NA,Go=NA,Ao=NA,Bo=NA,Sigmao=NA,Uo=NA,SV=NA,type=NA,Co=NA,X=NA,Yo=NA,d=NA,r=NA,r_np=NA,Ncommtrend=NA,DFYflag=0,A=NA,Ncommfakt=1,uz=NA) {
   ### m     : number of variables in a country
   ### n     : number of countries
   ### p     : lag length n x 3 x S array collecting lag length for each country with respect to domestic and foreigen variable for each state. The last column specifies the number of exogenous variabls for each state.
@@ -163,6 +158,15 @@ MRCIGVARData <- function(m,n,p,T,S,W=NA,SESVI=NA,TH=NA,Go=NA,Ao=NA,Bo=NA,Sigmao=
   if (missing(Ncommtrend)) {
     Ncommtrend = NA
   }
+  if (missing(DFYflag)) {
+    DFYflag = 0
+  }
+  if (missing(Ncommfakt)) {
+    Ncommfakt  = 0
+  }
+
+
+
   if (anyNA(d)) {
     d = 1
   }
@@ -282,7 +286,7 @@ MRCIGVARData <- function(m,n,p,T,S,W=NA,SESVI=NA,TH=NA,Go=NA,Ao=NA,Bo=NA,Sigmao=
       Bo = (1:(m * m * Pmax * n * S)) * 0
       dim(Bo) = c(m, m, Pmax, n, S)
       Bo = VARBS_commtrend(m, p, T, r, Ncommtrend, n, S, r_npo = r_np)[[1]]
-      Ao = Bo2Ao(m, p, T, r, Ncommtrend, n, S, r_npo = r_np)
+      Ao = Bo2Ao(m, p, T, r, Ncommtrend, n, S, r_npo = r_np,DFYflag=DFYflag)
       BoAo_h = BoAo2TBoAo(Bo, Ao, W, S)
       Bo = BoAo_h[[1]]
       Ao = BoAo_h[[2]]
@@ -357,15 +361,44 @@ MRCIGVARData <- function(m,n,p,T,S,W=NA,SESVI=NA,TH=NA,Go=NA,Ao=NA,Bo=NA,Sigmao=
   }
   check[S + 1] = max(abs(Y))
   SigmaS = NA
-  result = list(Y, X, Uo, resid, Go, GDC, Co, Sigmao, TH, St,
-                SV, SESVI, Ao, Bo, check, type, m, n, p, S, W, SigmaS,
-                Yo, d, r, CIVARB, kkk)
-  names(result) = c("Y", "X", "Uo", "resid",
-                    "Go", "GDC", "Co", "Sigmao",
-                    "TH", "St", "SV", "SESVI", "Ao",
-                    "Bo", "check", "type", "m", "n",
-                    "p", "S", "W", "SigmaS", "Yo",
-                    "d", "r", "CIVARB", "kkk")
+
+  if (Ncommfakt>0) {
+
+    uz = rnormSIGMA(T,diag(Ncommfakt))
+    Z = uz
+    for (i in 3:T) Z[i,] = Z[i-1,]*1.4-Z[i-2,]*0.4+uz[i,]
+
+    if (anyNA(A)) {
+      A = diag(m*n+Ncommfakt)
+      #for (i in 1:n) {A[(i-1)*m+Ncommfakt+(m-(Ncommfakt-1)):m ] = diag(Ncommfakt)*50*max(abs(Y[,i*m]))/max(abs(Z))}
+      A[(Ncommfakt+1):(Ncommfakt+n*m),1:Ncommfakt]  = 0.3
+    }
+
+    YY <- cbind(Z,Y);
+
+    Y = (YY%*%t(A))[,Ncommfakt+(1:(m*n))]
+    dim_GC = dim(Go); dim_GC[1:2] = dim_GC[1:2]+Ncommfakt
+    GC = c(1:prod(dim_GC))*0; dim(GC) = dim_GC
+    GC[(Ncommfakt+1):(Ncommfakt+n*m),(Ncommfakt+1):(Ncommfakt+n*m),,] = Go
+    GC[1:Ncommfakt,1:Ncommfakt,1,] = 1.4*diag(Ncommfakt); GC[1:Ncommfakt,1:Ncommfakt,2,] = -0.4*diag(Ncommfakt)  # assuming unit root common factor(s)
+    for (i in 1:Pmax) GC[,,i,1] = A%*%GC[,,i,1]%*%solve(A)
+    for (i in 1:Pmax) GC[,,i,2] = A%*%GC[,,i,2]%*%solve(A)
+    Uo[,,1] = (cbind(uz,Uo[,,1])%*%t(A))[,Ncommfakt+(1:(m*n))]
+    Uo[,,2] = (cbind(uz,Uo[,,2])%*%t(A))[,Ncommfakt+(1:(m*n))]
+    Do = (1:(m*n*Pmax*Ncommfakt*2))*0; dim(Do) = c(m,Ncommfakt,Pmax,n,2)
+
+  }  else  {
+    Z  = NA
+    uz = NA
+    A  = NA
+    GC = NA
+    Do = NA
+  }
+
+
+  result = list(Y, X, Uo, resid, Go, GDC, Co, Sigmao, TH, St,SV, SESVI, Ao, Bo, check, type, m, n, p, S, W, SigmaS, Yo, d, r, CIVARB, kkk,DFYflag,Z,uz,A,GC,Do)
+  names(result) = c("Y", "X", "Uo", "resid","Go", "GDC", "Co", "Sigmao","TH", "St", "SV", "SESVI", "Ao","Bo", "check", "type", "m", "n","p", "S", "W", "SigmaS", "Yo",
+                    "d", "r", "CIVARB", "kkk","DFYflag","Z","uz","A","GC","Do")
   return(result)
 }
 
@@ -471,33 +504,33 @@ VARBS_commtrend = function(m,p,T,r, Ncommtrend,n,S,r_npo) {
 #' @param n Number of countries
 #' @param S Number of regimes
 #' @param r_npo The matrix containing the roots of the characteristic polynomial
+#' @param DFYflag switching indicator whether the foreign variables enter the cointegration space
 #'
 #' @return Parameter matrix of the foreign variables in the country equation of the GVAR model
 #' @export
-Bo2Ao = function(m,p,T,r, Ncommtrend,n,S,r_npo) {
-    d = 1
-    Boab  = VARBS_commtrend(m,p,T,r,Ncommtrend,n,S,r_npo)
-    Pmax = max(p[,1:2,])
-    beta  = Boab[[3]]
-    alpha = Boab[[2]]
-    Ao = (1:(m * m * Pmax * n * S)) * 0
-    dim(Ao) = c(m, m, Pmax, n, S)
-    for (i in 1:n) {
-        for (s in 1:S) {
-        	if (p[i,2,s] < 2) Ao = Ao
-        	if (p[i,2,s] >= 2) {
-                VARD = VARData(m, p=(p[i, 2,s]-1),T)
-            	BB = VARD$B
-            	Ao[,,1,i,s] = BB[,,1]+alpha[[i]][[s]]%*%t(beta[[i]][[s]])*d
-            	Ao[,,p[i,2,s],i,s] = -BB[,,p[i,2,s]-1]
-            	if ((p[i, 2,s]-1)>=2) { for (L in 2:(p[i, 2,s]-1)) Ao[, ,L, i,s] = BB[,,L]-BB[,,L-1]}
-        	}
-        }
+Bo2Ao <- function(m,p,T,r, Ncommtrend,n,S,r_npo,DFYflag=NA) {
+  if ( anyNA(DFYflag) ) DFYflag = 0
+  Boab  = VARBS_commtrend(m,p,T,r,Ncommtrend,n,S,r_npo)
+  Pmax = max(p[,1:2,])
+  beta  = Boab[[3]]
+  alpha = Boab[[2]]
+  Ao = (1:(m * m * Pmax * n * S)) * 0
+  dim(Ao) = c(m, m, Pmax, n, S)
+  for (i in 1:n) {
+    for (s in 1:S) {
+      if (p[i,2,s] < 2) Ao = Ao
+      if (p[i,2,s] >= 2) {
+        VARD = VARData(m, p=(p[i, 2,s]-1),T)
+        BB = VARD$B
+        Ao[,,1,i,s] = BB[,,1]+alpha[[i]][[s]]%*%t(beta[[i]][[s]])*DFYflag
+        Ao[,,p[i,2,s],i,s] = -BB[,,p[i,2,s]-1]
+        if ((p[i, 2,s]-1)>=2) { for (L in 2:(p[i, 2,s]-1)) Ao[, ,L, i,s] = BB[,,L]-BB[,,L-1]}
+      }
     }
+  }
 
-    return(Ao)
+  return(Ao)
 }
-
 
 
 #' A full rank linear transformation of initial Bo and Ao matrices
@@ -548,242 +581,6 @@ BoAo2TBoAo = function(Bo,Ao,W,S) {
 
 
 
-
-
-#' Estimation of MRCIGVAR(m,n,p,S,r)
-#'
-#' This function estimates the parameters of a multi regime cointegrated global VAR model. The adjustment speeds are assumed to be identical in different regimes.
-#'
-#' @param res   : an MRCIVAR object of the output of MRCIGVARData
-#' @return      : an MRCIVAR object with estimated parameters and statistics.
-#' @examples
-#' m = 2
-#' n = 3
-#' p = c(2,2,2,2,2,2,2,2,2,2,0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,0,0,0,0,0); dim(p) = c(5,3,2)
-#' p = p[1:n,,]; p[,1,] = 3; p[,2,] = 2
-#'
-#' TH = c(1:n)*0; dim(TH) = c(1,n)
-#' SESVI=rep(1,3,5)
-#' r  = rep(1,n)
-#'
-#' ## case of n = 3, m = 2, S = 2     ## m: number of variables, n: number of countries
-#'
-#' res_d <- MRCIGVARData(m=2,n=3,p=p,TH=TH,T=300,S=2, SESVI=c(1,3,5),r=rep(1,3),Ncommtrend=1)
-#' max(abs(res_d$Y))
-#' STAT(res_d$Go[,,,2])
-#' STAT(res_d$Go[,,,1])
-#' max(abs(res_d$Y))
-#' res_e  = MRCIGVARest(res=res_d)
-#'
-#'
-#'
-#' @export
-MRCIGVARest=function(res) {
-### m     : number of variables in a country
-### n     : number of countries
-### p     : an (n x 3 x S) array collecting lag length for each country with respect to domestic and foreign variables for each state. The last column specifies the number of exogenous variables for each state.
-### T     : number of observations
-### S     : number of regimes
-### SESVI : n vector of indexes of the switching variable in the endogenous variables Y for the case of self-excited threshold model.
-###         (m,n,p,T,S,SESVI) are parameters which must be provided.
-### TH    : n x S-1  matrix of threshold values of n countries.
-### Go    : mn x mn x p x S GVAR(m,n,p) coefficients matrix of S different regimes
-### Sigmao: mn x mn x S array of the covariance matrix of the GVAR(m,n,p) in S different regimes
-### Uo    : a T x mn x S  array of the temporally independent innovation processes
-### X	    : a T x k x n x S array of exogenous variables which may be common/different to all countries and different across all states
-###         (TH,Go,Sigmao,Uo,SV) if not provided, they will be generated randomly.
-### type  : deterministic component "const" and "none" "exog0" "exog1" are foure options
-### Co    : if type = "const" mu is an m x n x S array of the intercepts of the time series in the different regimes
-###
-###
-### output:
-### c("Y","Uo","Go","Sigmao","TH","St","sv","SESVI","check")
-###
-### Y     : T x mn data matrix of the simulated data via of the MSGVAR(m,n,p,S)
-### Uo    : an T x mn x S   array of the temorally independent innovation processes of the MSGVAR(m,n,p,S)
-### Go    : mn x mn x p x S array collecting the MSGVAR(m,n,p,S) coefficients in S different states
-### Sigmao: mn x mn x S array collecting the covariance matrices of the simulated MSGVAR(m,n,p,S) in S different states
-### TH    : S-1 vector of thresholds
-### St    : simulated time path of states/regimes
-### SESVI : index if the switching variable
-### check : maximum of the data to check stationarity
-###
-### Remarks: The states of each country at each time step is governed by the switching variables of each country and hence there is a large numbers
-###          of possible combinations of gegimes.
-###          The coefficients matrix can be constructed from Go, given a regime combination. The stationarity of the GVAR(m,n,p)
-###          at each time step is not guaranteed. But this is not relevant. (This is a open question.)
-###
-###
-    m = res$m
-    n = res$n
-    p = res$p
-    Y = as.matrix(res$Y);  if (max(abs(Y)) > 10000000) return("Check data!!!");
-    X = res$X
-    W = res$W
-    type = res$type
-    TH = res$TH
-    SESVI = res$SESVI
-    Go = res$Go
-    S = res$S
-    Ao = res$Ao
-    Bo = res$Bo
-    Co = res$Co
-    GDC = res$GDC
-    Sigmao = res$Sigmao * 0
-    d = res$d
-    P  = max(p[,1:2,],d)
-    Pmax = max(p[,1:2,])
-    St = res$St
-    r  = res$r
-    Uo = res$Uo
-    SigmaS = (1:(n*m*S*n*m*S))*0
-    dim(SigmaS) = c(n*m*S,n*m*S)
-    VAR_domestic = list()
-    CRK_tst = list()
-
-    T = nrow(Y)
-    check = c(1:(S+1))*0
-
-  Ct = Uo*0;
-
-  if (type=="none") {
-	CDC = c(1:(m*n*S))*0; dim(CDC)=c(m,1,n,S)
-	Co = CDC
-	GDC = Co; dim(GDC) = c(n*m,1,S)
-      Ct  = Uo*0
-  }
-  if (type=="const") {
-	CDC = stats::rnorm(m*n*S); dim(CDC)=c(m,1,n,S)
-      if (anyNA(Co)) Co = CDC
-	GDC = Co; dim(GDC) = c(n*m,1,S)
-      CoV = as.vector(Co)
-	for (s in 1:S) {
-            CoV = as.vector(Co[,,,s])
-		for (i in 1:n)  Ct[,,s] = matrix(1,T,1)%*%t(CoV)
-      }
-
-  }
-
-  if (type=="exog1")  {
-	k 	   = dim(X)[2]+1  # wrong
-     	CDC      = stats::rnorm(m*k*n*S)
-	dim(CDC) = c(m,k,n,S)
-
-	if (anyNA(Co)) Co = CDC
-	GDC	   = Co
-      dim(GDC) = c(n*m,k,S);
-      CoV = matrix(0,k,m*n);
-
-      for (s in 1:S) {
-         for (i in 1:n) {
-            if ( p[i,3,s]<k-1) Co[,(p[i,3,s]+1):k,i,s] = 0
-		for (j in 1:k ) CoV[j,]  = as.vector(Co[,j,,s])
-		Ct[,,s] = cbind(matrix(1,dim(X)[1],1),X[,,i,s])%*%CoV
-	   }
-      }
-  }
-
-  if (type=="exog0")  {
-	k 	   = dim(X)[2]+1   # wrong
-     	CDC      = stats::rnorm(m*k*n*S)
-	dim(CDC) = c(m,k,n,S)
-      CDC[,1,,] = 0
-    	if (anyNA(Co)) Co = CDC
-	GDC	   = Co
-      dim(GDC) = c(n*m,k,S);
-      CoV = matrix(0,k,m*n);
-
-      for (s in 1:S) {
-         for (i in 1:n) {
-            if ( p[i,3,s]<k-1) Co[,(p[i,3,s]+2):k,i,s] = 0
-		for (j in 1:k ) CoV[j,]  = as.vector(Co[,j,,s])
-		Ct[,,s] = cbind(matrix(1,dim(X)[1],1),X[,,i,s])%*%CoV
-	   }
-      }
-  }
-
-      WMATn = W%x%diag(m)
-      FY      = Y%*%WMATn
-
-  	Go 	  = (1:(m*n*m*n*Pmax*S))*0
-      dim(Go) = c(m*n,m*n,Pmax,S)
-	Bo 	  = (1:(m*m*Pmax*n*S))*0
-	dim(Bo) = c(m,m,Pmax,n,S)
-	Ao      = Bo*0
-	if (type=="none")   Model="I"
-      if (type=="const")  Model="III"
-            for (i in 1:n) {
-                  pi = t(p[i,,])
-                  y = Y[,((i-1)*m+1):(i*m)]
-                  x = FY[,((i-1)*m+1):(i*m)]
-                  crk = m-r[i]
-                  Sti = 2-St[,i]
-			#CIVARD = MRCIVARData(n=2*m,p=pi,T =100,S=S,SESVI=SESVI[i],TH=TH[i],Sigmao=sigma,type="none",r=r[i])
-			tst <- MRCVECMest2(y,x,s=Sti,model=Model,type="trace",P=pi,crk=crk,q = 0.95)
-			VAR_domestic[[i]] = tst[[2]]
- 			CRK_tst[[i]] = tst[[1]]
-
-			nrowresid = nrow(VAR_domestic[[i]]$residuals)
-                  Uo[(T-nrowresid+1):T,((i-1)*m+1):(i*m),1] = (2-St[(T-nrowresid+1):T,i])*VAR_domestic[[i]]$residuals
-                  Uo[(T-nrowresid+1):T,((i-1)*m+1):(i*m),2] = (St[(T-nrowresid+1):T,i]-1)*VAR_domestic[[i]]$residuals
-
-			AB1 = VECM2VAR(param = tst[[2]][[1]][1:(crk+m*(pi[1,1]-1+pi[1,2]-1)),],beta=tst$beta,q=c(crk,(pi[1,1]-1),(pi[1,2]-1)))
-			AB2 = VECM2VAR(param = tst[[2]][[1]][c(1:crk,(crk+m*(pi[1,1]-1+pi[1,2]-1))+1:(m*(pi[2,1]+pi[2,2]-2))),],beta=tst$beta,q=c(crk,(pi[2,1]-1),(pi[2,2]-1)))
-
-			Bo[,,1:pi[1,1],i,1] = AB1[[1]]
-		      Ao[,,1:pi[1,2],i,1] = AB1[[2]]
-			Bo[,,1:pi[2,1],i,2] = AB2[[1]]
-		      Ao[,,1:pi[2,2],i,2] = AB2[[2]]
-			if (type=="const") {
-				Co[,,i,1] = tst[[2]][[1]][crk+(sum(pi[,-3])-4)*m+1,] ;
-				Co[,,i,2] = tst[[2]][[1]][crk+(sum(pi[,-3])-4)*m+2,]
-			}
-
-            }
-
-
-  	for (s in 1:S ) Go[,,,s] = BoAoW2G(Bo[,,,,s],Ao[,,,,s],W,m,n,Pmax)
-
-      for (s in 1:S) Sigmao[,,s] = t(Uo[,,s])%*%Uo[,,s]/sum(St[,i]==s)
-
-      for (s in 1:S) {
-		for (i in 1:n) {
-			for (j in 1:n)  Sigmao[(m*(i-1)+1):(i*m),(m*(j-1)+1):(j*m),s] = t(Uo[,(m*(i-1)+1):(i*m),s])%*%Uo[,(m*(j-1)+1):(j*m),s]/sum((St[,i]==s)*(St[,j]==s))
-
-		}
-	}
-
-      for (s in 1:S)  {
-          for (ss in 1:S)  {
-               for (i in 1:n)  {
-                   for (j in 1:n) SigmaS[ ((s-1)*n*m+(i-1)*m+1):((s-1)*n*m+i*m), ((ss-1)*n*m+(j-1)*m+1):((ss-1)*n*m+j*m)] =t(Uo[,(m*(i-1)+1):(i*m),s])%*%Uo[,(m*(j-1)+1):(j*m),ss]/sum((St[,i]==s)*(St[,j]==ss))
-
-
-		   }
-	    }
-	}
-
-
-
-
-    res$Go = Go
-    res$Sigmao = Sigmao
-    res$r_npo = NA
-    res$Ao = Ao
-    res$Bo = Bo
-    res$Co = Co
-    res$GDC = GDC
-    res$SigmaS = SigmaS
-    res$resid = Uo
-    res$VAR_domestic = VAR_domestic
-    res$CRK_tst      = CRK_tst
-    return(res)
-}
-
-
-
-
-
 #' Estimation of MRCIGVAR(res)
 #'
 #' This function estimates parameters of a multi regime cointegrated global VAR(p) model. The adjustment speeds to the cointegration relations are assumed to be different in different regimes.
@@ -815,224 +612,268 @@ MRCIGVARest=function(res) {
 #' #   res_d <- MRCIGVARData(m=2,n=3,p=p,TH=TH,T=300,S=2, SESVI=c(1,3,5),Ao=Ao,Bo=Bo,Co=Co)
 #'
 #' max(res_d$Y)
-#' res_e  = MRCIGVARestm(res=res_d)
+#' res_e  = MRCIGVARest(res=res_d)
 #' res_e$Summary
 #'
 #' @export
-MRCIGVARestm=function(res=res) {
-### m     : number of variables in a country
-### n     : number of countries
-### p     : lag length n x 3 x S array collecting lag length for each country with respect to domestic and foreigen variable for each state. The last column specifies the number of exogenous variabls for each state.
-### T     : number of observations
-### S     : number of regimes
-### SESVI : n vector of indeces of the switching variable in the endogeneous variables Y for the case of self-excited threshhold model.
-###         (m,n,p,T,S,SESVI) are parameters which must be provided.
-### TH    : n x S-1  matrix of threshold values of n countries.
-### Go    : mn x mn x p x S GVAR(m,n,p) coefficients matrix of S different regimes
-### Sigmao: mn x mn x S array of the covariance matrix of the GVAR(m,n,p) in S different regimes
-### Uo    : a T x mn x S  array of the temorally independent innovation processes
-### X	    : a T x k x n x S array of exogenous veriables which may be common/different to all countries and different across all states
-###         (TH,Go,Sigmao,Uo,SV) if not provided, they will be generated randomly.
-### type  : deterministic component "const" and "none" "exog0" "exog1" are foure options
-### Co    : if type = "const" mu is an m x n x S array of the intercepts of the time series in the different regimes
-###
-###
-### output:
-### c("Y","Uo","Go","Sigmao","TH","St","sv","SESVI","check")
-###
-### Y     : T x mn data matrix of the simulated data via of the MSGVAR(m,n,p,S)
-### Uo    : an T x mn x S   array of the temorally independent innovation processes of the MSGVAR(m,n,p,S)
-### Go    : mn x mn x p x S array collecting the MSGVAR(m,n,p,S) coefficients in S different states
-### Sigmao: mn x mn x S array collecting the covariance matrices of the simulated MSGVAR(m,n,p,S) in S different states
-### TH    : S-1 vector of thresholds
-### St    : simulated time path of states/regimes
-### SESVI : index if the switching variable
-### check : maximum of the data to check stationarity
-###
-### Remarks: The states of each country at each time step is governed by the switching variables of each country and hence there is a large numbers
-###          of possible combinations of gegimes.
-###          The coefficients matrix can be constructed from Go, given a regime combination. The stationarity of the GVAR(m,n,p)
-###          at each time step is not guaranteed. But this is not relevant. (This is a open question.)
-###
-###
-    m = res$m
-    n = res$n
-    p = res$p
-    Y = as.matrix(res$Y);  if (max(abs(Y)) > 10000000) return("Check data!!!");
-    X = res$X
-    W = res$W
-    type = res$type
-    TH = res$TH
-    SESVI = res$SESVI
-    Go = res$Go
-    S = res$S
-    Ao = res$Ao
-    Bo = res$Bo
-    Co = res$Co
-    GDC = res$GDC
-    Sigmao = res$Sigmao * 0
-    d = res$d
-    r_npo = res$r_npo
-    P = max(p[, 1:2, ], d)
-    Pmax = max(p[, 1:2, ])
-    St = res$St
-    r = res$r
-    Uo = res$Uo
-    SigmaS = (1:(n * m * S * n * m * S)) * 0
-    dim(SigmaS) = c(n * m * S, n * m * S)
-    VECM_domestic = list()
-    VECM_domesticS = list()
-    CRK_tst = list()
-    T = nrow(Y)
-    check = c(1:(S + 1)) * 0
-    LH_P = (1:n) * 0
-    LH_AIC = (1:n) * 0
-    LH_BIC = (1:n) * 0
-    ORLHP = (1:n) * 0
-    ORAIC = (1:n) * 0
-    ORBIC = (1:n) * 0
-    Ct = Uo * 0
+MRCIGVARest <- function(res=res_d) {
+  ### m     : number of variables in a country
+  ### n     : number of countries
+  ### p     : lag length n x 3 x S array collecting lag length for each country with respect to domestic and foreign variable for each state. The last column specifies the number of exogenous variables for each state.
+  ### T     : number of observations
+  ### S     : number of regimes
+  ### SESVI : n vector of indeces of the switching variable in the endogeneous variables Y for the case of self-excited threshold model.
+  ###         (m,n,p,T,S,SESVI) are parameters which must be provided.
+  ### TH    : n x S-1  matrix of threshold values of n countries.
+  ### Go    : mn x mn x p x S GVAR(m,n,p) coefficients matrix of S different regimes
+  ### Sigmao: mn x mn x S array of the covariance matrix of the GVAR(m,n,p) in S different regimes
+  ### Uo    : a T x mn x S  array of the temorally independent innovation processes
+  ### X	    : a T x k x n x S array of exogenous veriables which may be common/different to all countries and different across all states
+  ###         (TH,Go,Sigmao,Uo,SV) if not provided, they will be generated randomly.
+  ### type  : deterministic component "const" and "none" "exog0" "exog1" are foure options
+  ### Co    : if type = "const" mu is an m x n x S array of the intercepts of the time series in the different regimes
+  ###
+  ###
+  ### output:
+  ### c("Y","Uo","Go","Sigmao","TH","St","sv","SESVI","check")
+  ###
+  ### Y     : T x mn data matrix of the simulated data via of the MSGVAR(m,n,p,S)
+  ### Uo    : an T x mn x S   array of the temorally independent innovation processes of the MSGVAR(m,n,p,S)
+  ### Go    : mn x mn x p x S array collecting the MSGVAR(m,n,p,S) coefficients in S different states
+  ### Sigmao: mn x mn x S array collecting the covariance matrices of the simulated MSGVAR(m,n,p,S) in S different states
+  ### TH    : S-1 vector of thresholds
+  ### St    : simulated time path of states/regimes
+  ### SESVI : index if the switching variable
+  ### check : maximum of the data to check stationarity
+  ###
+  ### Remarks: The states of each country at each time step is governed by the switching variables of each country and hence there is a large numbers
+  ###          of possible combinations of gegimes.
+  ###          The coefficients matrix can be constructed from Go, given a regime combination. The stationarity of the GVAR(m,n,p)
+  ###          at each time step is not guaranteed. But this is not relevant. (This is a open question.)
+  ###
+  ###
+  m = res$m
+  n = res$n
+  p = res$p
+  Y = as.matrix(res$Y);  if (max(abs(Y)) > 10000000) return("Check data!!!");
+  X = res$X
+  W = res$W
+  type = res$type
+  TH = res$TH
+  SESVI = res$SESVI
+  Go = res$Go
+  S = res$S
+  Ao = res$Ao
+  Bo = res$Bo
+  Co = res$Co
+  GDC = res$GDC
+  Sigmao = res$Sigmao * 0
+  d = res$d
+  r_npo = res$r_npo
+  P = max(p[, 1:2, ], d)
+  Pmax = max(p[, 1:2, ])
+  St = res$St
+  r = res$r
+  Uo = res$Uo
+  Z = res$Z
+  if (is.null(Z)) Z   = NA
+  if (!anyNA(Z))  {
+    Z = as.matrix(Z)
+    kz = ncol(Z)
+  } else kz  = 0
+  Do = res$Do
+  DFYflag = res$DFYflag
+  SigmaS = (1:(n * m * S * n * m * S)) * 0
+  dim(SigmaS) = c(n * m * S, n * m * S)
+  VECM_domestic = list()
+  VECM_domesticS = list()
+  CRK_tst = list()
+  T = nrow(Y)
+  check = c(1:(S + 1)) * 0
+  LH_P = (1:n) * 0
+  LH_AIC = (1:n) * 0
+  LH_BIC = (1:n) * 0
+  ORLHP = (1:n) * 0
+  ORAIC = (1:n) * 0
+  ORBIC = (1:n) * 0
+  Ct = Uo * 0
 
-    WMATn = W %x% diag(m)
-    FY = Y %*% WMATn
-    Go = (1:(m * n * m * n * Pmax * S)) * 0
-    dim(Go) = c(m * n, m * n, Pmax, S)
-    Bo = (1:(m * m * Pmax * n * S)) * 0
-    dim(Bo) = c(m, m, Pmax, n, S)
-    Ao = Bo * 0
-    if (type == "none"|type == "exog0" )
-      Model = "I"
-    if (type == "const"|type =="exog1" )
-      Model = "III"
-    for (i in 1:n) {
-      pj = t(p[i, , ])
-      pjOR = pj * 0
-      pjOR[1, 1] = max(pj[, 1])
-      pjOR[1, 2] = max(pj[, 2])
-      y = Y[, ((i - 1) * m + 1):(i * m)]
-      x = FY[, ((i - 1) * m + 1):(i * m)]
+  WMATn = W %x% diag(m)
+  FY = Y %*% WMATn
+  Go = (1:(m * n * m * n * Pmax * S)) * 0
+  dim(Go) = c(m * n, m * n, Pmax, S)
+  Bo = (1:(m * m * Pmax * n * S)) * 0
+  dim(Bo) = c(m, m, Pmax, n, S)
+  Ao = Bo * 0
+  if (type == "none"|type == "exog0" )
+    Model = "I"
+  if (type == "const"|type =="exog1" )
+    Model = "III"
+  for (i in 1:n) {
+    pj = t(p[i, , ])
+    pjOR = pj * 0
+    pjOR[1, 1] = max(pj[, 1])
+    pjOR[1, 2] = max(pj[, 2])
+    y = Y[, ((i - 1) * m + 1):(i * m)]
+    x = FY[, ((i - 1) * m + 1):(i * m)]
 
-      HilfeYi  = Y[, ((i - 1) * m + 1):((i - 1) * m + m)]
-      HilfeFYi = FY[, ((i - 1) * m + 1):((i - 1) * m + m)]
-      if (is.null(colnames(HilfeYi))) colnames(HilfeYi)   = paste0(rep("Y",ncol(HilfeYi)),c(1:ncol(HilfeYi)))
-      if (is.null(colnames(HilfeFYi))) colnames(HilfeFYi) = paste0(rep("FY",ncol(HilfeYi)),c(1:ncol(HilfeFYi)))
-      y = HilfeYi
-      x = HilfeFYi
-      crk = m - r[i]
-      Sti = 2 - St[, i]
-      Pmaxi = max(p[i, 1, ])
-      if (!anyNA(X)) {
-        if (is.null(colnames(X))) colnames(X)   = paste0(rep("X",ncol(X)),c(1:ncol(X)))
-        ORXi = X[,,i,1]; dim(ORXi) = dim(X)[1:2]
-        MRXi = X[,,i,];  #dim(MRXi) = c(dim(X)[1:2],2)
-      } else {
-        MRXi = NA
-        ORXi = NA
-      }
-      ORtst <- MRCVECMest2(y, x, model = Model, type = "trace",P = pjOR, crk = crk, q = 0.95, Dxflag = 0,X=ORXi)
-      nrowresidOR = nrow(ORtst[[2]]$residuals)
-      UOR = ORtst[[2]]$residuals
-      SigmaOR = t(UOR) %*% UOR/(T - P * m + crk - ncol(x) + (Model == "III"))
-      ORLHP[i] = -(T * m/2) * log(2 * 3.1415) - (T * m/2) + T/2 * log(det(solve(SigmaOR)))
-      ORAIC[i] = 2 * m * (m * pjOR[1, 1] - m + crk + (m + 1)/2) -  2 * ORLHP[i]
-      ORBIC[i] = log(T) * m * (m * pjOR[1, 1] - m + crk + (m +  1)/2) - 2 * ORLHP[i]
-      tst <- MRCVECMestm(y, x, s = Sti, model = Model, type = "trace", P = pj, crk = crk, q = 0.95,X=MRXi)
-      VECM_domestic[[i]]     = tst$VECM1
-      VECM_domesticS[[i]]    = tst$VECM1S
-      CRK_tst[[i]] = tst$erg
-      nrowresid = nrow(tst$VECM1$residuals)
-      Uo[(T - nrowresid + 1):T, ((i - 1) * m + 1):(i * m),
-         1] = (2 - St[(T - nrowresid + 1):T, i]) * tst$VECM1$residuals
-      Uo[(T - nrowresid + 1):T, ((i - 1) * m + 1):(i * m),
-         2] = (St[(T - nrowresid + 1):T, i] - 1) * tst$VECM1$residuals
-      sigma1 = t(Uo[(T - nrowresid + 1):T, ((i - 1) * m + 1):(i *
-                                                                m), 1]) %*% Uo[(T - nrowresid + 1):T, ((i - 1) *
-                                                                                                         m + 1):(i * m), 1]/(sum(2 - St) - (m * sum(p[i, 1:2,
-                                                                                                                                                      1]) + m - crk))
-      sigma2 = t(Uo[(T - nrowresid + 1):T, ((i - 1) * m + 1):(i *
-                                                                m), 2]) %*% Uo[(T - nrowresid + 1):T, ((i - 1) *
-                                                                                                         m + 1):(i * m), 2]/(sum(St - 1) - (m * sum(p[i, 1:2,
-                                                                                                                                                      2]) + m - crk))
-      LH_P[i] = -(T * m/2) * log(2 * 3.1415) - (T * m/2) + (sum(2 -
-                                                                  St))/2 * log(det(solve(sigma1))) + (sum(St - 1))/2 *
-        log(det(solve(sigma2)))
-      LH_AIC[i] = 2 * (m * (sum(p[i, 1:2, 1]) - m + crk) +
-                         m * (m + 1)/2) + 2 * (m * (sum(p[i, 1:2, 2]) - m +
-                                                      crk) + m * (m + 1)/2) - 2 * LH_P[i]
-      LH_BIC[i] = log(sum(2 - St)) * (m * (sum(p[i, 1:2, 1]) -
-                                             m + crk) + m * (m + 1)/2) + log(sum(St - 1)) * (m *
-                                                                                               (sum(p[i, 1:2, 2]) - m + crk) + m * (m + 1)/2) -
-        2 * LH_P[i]
-      AB1 = VECM2VAR(param = tst$VECM1[[1]][c(1:crk,2*crk +(1: (m * (pj[1,1] - 1 + pj[1, 2] - 1)))), ], beta = tst$betaS, q = c(crk,(pj[1, 1] - 1), (pj[1, 2] - 1)))
-      AB2 = VECM2VAR(param = tst$VECM1[[1]][c(crk+(1:crk), (crk*2 + m * (pj[1, 1] - 1 + pj[1, 2] - 1)) + 1:(m * (pj[2,1] + pj[2, 2] - 2))), ], beta = tst$betaS, q = c(crk,(pj[2, 1] - 1), (pj[2, 2] - 1)))
-      Bo[, , 1:pj[1, 1], i, 1] = AB1[[1]]
-      Ao[, , 1:pj[1, 2], i, 1] = AB1[[2]]
-      Bo[, , 1:pj[2, 1], i, 2] = AB2[[1]]
-      Ao[, , 1:pj[2, 2], i, 2] = AB2[[2]]
-      if (type == "const" | type == "exog1") {
-        dd = (dim(tst$VECM1[[1]])[1]-(crk*2 + (sum(pj[, -3]) - 4) * m))/2
-        Co[, , i, 1] = t(tst$VECM1[[1]][crk*2 + (sum(pj[, -3]) - 4) * m + 1:dd, ])
-        Co[, , i, 2] = t(tst$VECM1[[1]][crk*2 + (sum(pj[, -3]) - 4) * m + dd +1:dd,])
-      }
-      if (type == "exog0") {
-        dd = (dim(tst$VECM1[[1]])[1]-(crk*2 + (sum(pj[, -3]) - 4) * m))/2
-        Co[,-1, i, 1] =  t(tst$VECM1[[1]][crk*2 + (sum(pj[, -3]) - 4) * m + 1:dd, ])
-        Co[,-1, i, 2] =  t(tst$VECM1[[1]][crk*2 + (sum(pj[, -3]) - 4) * m + 1:dd, ])
-      }
+    HilfeYi  = Y[, ((i - 1) * m + 1):((i - 1) * m + m)]
+    HilfeFYi = FY[, ((i - 1) * m + 1):((i - 1) * m + m)]
+    if (is.null(colnames(HilfeYi))) colnames(HilfeYi)   = paste0(rep("Y",ncol(HilfeYi)),c(1:ncol(HilfeYi)))
+    if (is.null(colnames(HilfeFYi))) colnames(HilfeFYi) = paste0(rep("FY",ncol(HilfeYi)),c(1:ncol(HilfeFYi)))
+    y = HilfeYi
+    x = HilfeFYi
+    crk = m - r[i]
+    Sti = 2 - St[, i]
+    Pmaxi = max(p[i, 1, ])
+    if (!anyNA(X)) {
+      if (is.null(colnames(X))) colnames(X)   = paste0(rep("X",ncol(X)),c(1:ncol(X)))
+      ORXi = X[,,i,1]; dim(ORXi) = dim(X)[1:2]
+      MRXi = X[,,i,];  #dim(MRXi) = c(dim(X)[1:2],2)
+    } else {
+      MRXi = NA
+      ORXi = NA
     }
-    for (s in 1:S) Go[, , , s] = BoAoW2G(Bo[, , , , s], Ao[,
-                                                           , , , s], W, m, n, Pmax)
-    for (s in 1:S) Sigmao[, , s] = t(Uo[, , s]) %*% Uo[, , s]/sum(St[,
-                                                                     i] == s)
-    for (s in 1:S) {
-      for (i in 1:n) {
-        for (j in 1:n) Sigmao[(m * (i - 1) + 1):(i * m),
-                              (m * (j - 1) + 1):(j * m), s] = t(Uo[, (m * (i -
-                                                                             1) + 1):(i * m), s]) %*% Uo[, (m * (j - 1) +
-                                                                                                              1):(j * m), s]/sum((St[, i] == s) * (St[, j] ==
-                                                                                                                                                     s))
+    #ORtst <- MRCVECMest2(y, x, model = Model, type = "trace",P = pjOR, crk = crk, q = 0.95, Dxflag = 0,X=ORXi)
+    ORtst <- MRCVECMest2(y,x, model = Model, type = "trace", P = pjOR, crk = crk, q = 0.95, Dxflag = DFYflag, X=ORXi, CZ=as.matrix(Z))
+    nrowresidOR = nrow(ORtst[[2]]$residuals)
+    UOR = ORtst[[2]]$residuals
+    SigmaOR = t(UOR) %*% UOR/(T - P * m + crk - ncol(x) + (Model == "III"))
+    ORLHP[i] = -(T * m/2) * log(2 * 3.1415) - (T * m/2) + T/2 * log(det(solve(SigmaOR)))
+    ORAIC[i] = 2 * m * (m * pjOR[1, 1] - m + crk + (m + 1)/2) -  2 * ORLHP[i]
+    ORBIC[i] = log(T) * m * (m * pjOR[1, 1] - m + crk + (m +  1)/2) - 2 * ORLHP[i]
+    #tst <- MRCVECMestm(y, x, s = Sti, model = Model, type = "trace", P = pj, crk = crk, q = 0.95,X=MRXi)
+    tst <- MRCVECMestm(y, x, s = Sti, model = Model, type = "trace", P = pj, crk = crk, q = 0.95,Dxflag = DFYflag, X=MRXi,CZ=as.matrix(Z))
+    VECM_domestic[[i]]     = tst$VECM1
+    VECM_domesticS[[i]]    = tst$VECM1S
+    CRK_tst[[i]] = tst$erg
+    nrowresid = nrow(tst$VECM1$residuals)
+    Uo[(T - nrowresid + 1):T, ((i - 1) * m + 1):(i * m),
+       1] = (2 - St[(T - nrowresid + 1):T, i]) * tst$VECM1$residuals
+    Uo[(T - nrowresid + 1):T, ((i - 1) * m + 1):(i * m),
+       2] = (St[(T - nrowresid + 1):T, i] - 1) * tst$VECM1$residuals
+    sigma1 = t(Uo[(T - nrowresid + 1):T, ((i - 1) * m + 1):(i *
+                                                              m), 1]) %*% Uo[(T - nrowresid + 1):T, ((i - 1) *
+                                                                                                       m + 1):(i * m), 1]/(sum(2 - St) - (m * sum(p[i, 1:2,
+                                                                                                                                                    1]) + m - crk))
+    sigma2 = t(Uo[(T - nrowresid + 1):T, ((i - 1) * m + 1):(i *
+                                                              m), 2]) %*% Uo[(T - nrowresid + 1):T, ((i - 1) *
+                                                                                                       m + 1):(i * m), 2]/(sum(St - 1) - (m * sum(p[i, 1:2,
+                                                                                                                                                    2]) + m - crk))
+    LH_P[i] = -(T * m/2) * log(2 * 3.1415) - (T * m/2) + (sum(2 -
+                                                                St))/2 * log(det(solve(sigma1))) + (sum(St - 1))/2 *
+      log(det(solve(sigma2)))
+    LH_AIC[i] = 2 * (m * (sum(p[i, 1:2, 1]) - m + crk) +
+                       m * (m + 1)/2) + 2 * (m * (sum(p[i, 1:2, 2]) - m +
+                                                    crk) + m * (m + 1)/2) - 2 * LH_P[i]
+    LH_BIC[i] = log(sum(2 - St)) * (m * (sum(p[i, 1:2, 1]) -
+                                           m + crk) + m * (m + 1)/2) + log(sum(St - 1)) * (m * (sum(p[i, 1:2, 2]) - m + crk) + m * (m + 1)/2) - 2 * LH_P[i]
+
+
+    ConnectPoint = 2*crk+(sum(pj[,1:2])-4)*m
+    Diff =  (dim(tst$VECM1[[1]])[1] -  (2*crk+(sum(pj[,1:2])-4)*m))/2
+
+    if ( Diff>0 ) {
+      ADD1 = 1:Diff
+      ADD2 = Diff + (1:Diff)
+      if ((!type=="none")&(kz>0)) {
+        CLength = Diff-kz*(pj[1,1]-1)
+        ADD1 = c(1:CLength,2*CLength+1:(kz*(pj[1,1]-1)))
+        ADD2 = c(CLength+1:CLength,2*CLength+kz*(pj[1,1]-1)+1:(kz*(pj[1,1]-1)))
       }
+    }   else {
+      ADD1 = NULL
+      ADD2 = NULL
+
     }
-    for (s in 1:S) {
-      for (ss in 1:S) {
-        for (i in 1:n) {
-          for (j in 1:n) SigmaS[((s - 1) * n * m + (i -
-                                                      1) * m + 1):((s - 1) * n * m + i * m), ((ss -
-                                                                                                 1) * n * m + (j - 1) * m + 1):((ss - 1) * n *
-                                                                                                                                  m + j * m)] = t(Uo[, (m * (i - 1) + 1):(i *
-                                                                                                                                                                            m), s]) %*% Uo[, (m * (j - 1) + 1):(j * m),
-                                                                                                                                                                                           ss]/sum((St[, i] == s) * (St[, j] == ss))
-        }
-      }
+
+
+    AB1 = VECM2VAR(param = tst$VECM1[[1]][c(1:crk,2*crk +(1: (m * (pj[1,1] - 1 + pj[1, 2] - 1))),ConnectPoint+ADD1), ], beta = tst$betaS, q = c(crk,(pj[1, 1] - 1), (pj[1, 2] - 1)),kz=kz,Dxflag=DFYflag)
+    AB2 = VECM2VAR(param = tst$VECM1[[1]][c(crk+(1:crk), (crk*2 + m * (pj[1, 1] - 1 + pj[1, 2] - 1)) + 1:(m * (pj[2,1] + pj[2, 2] - 2)),ConnectPoint+ADD2), ], beta = tst$betaS, q = c(crk,(pj[2, 1] - 1), (pj[2, 2] - 1)),kz=kz,Dxflag=DFYflag)
+
+
+    #AB1 = VECM2VAR(param = tst$VECM1[[1]][c(1:crk,2*crk +(1: (m * (pj[1,1] - 1 + pj[1, 2] - 1)))), ], beta = tst$betaS, q = c(crk,(pj[1, 1] - 1), (pj[1, 2] - 1)),Dxflag=DFYflag)
+    #AB2 = VECM2VAR(param = tst$VECM1[[1]][c(crk+(1:crk), (crk*2 + m * (pj[1, 1] - 1 + pj[1, 2] - 1)) + 1:(m * (pj[2,1] + pj[2, 2] - 2))), ], beta = tst$betaS, q = c(crk,(pj[2, 1] - 1), (pj[2, 2] - 1)),Dxflag=DFYflag)
+    Bo[, , 1:pj[1, 1], i, 1] = AB1[[1]]
+    Ao[, , 1:pj[1, 2], i, 1] = AB1[[2]]
+    Bo[, , 1:pj[2, 1], i, 2] = AB2[[1]]
+    Ao[, , 1:pj[2, 2], i, 2] = AB2[[2]]
+    if (!anyNA(Do)) {
+      Do[, , 1:pj[1 ,1], i, 1] = AB1[[4]]
+      Do[, , 1:pj[1 ,1], i, 2] = AB2[[4]]
     }
-    res$Go = Go
-    res$Sigmao = Sigmao
-    res$Ao = Ao
-    res$Bo = Bo
-    res$Co = Co
-    res$GDC = GDC
-    res$SigmaS = SigmaS
-    res$resid = Uo
-    res$VECM_domestic = VECM_domestic
-    ORAIC  = sum(ORAIC)
-    ORBIC  = sum(ORBIC)
-    ORLHP  = sum(ORLHP)
-    LH_BIC = sum(LH_BIC)
-    LH_AIC = sum(LH_AIC)
-    LH_P   = sum(LH_P)
-    Summary = list(VECM_domesticS,CRK_tst,r_npo,ORLHP,ORAIC,ORBIC,LH_P,LH_AIC,LH_BIC)
-    names(Summary) = c("Estimation_Result","CRK_Test","r_npo","One_Regeime_LH","One_Regime_AIC","One_Regime_BIC","LH_function_Value","AIC","BIC")
-    res$Summary = Summary
-    return(res)
+
+
+    if (type == "const" | type == "exog1") {
+      dd = (dim(tst$VECM1[[1]])[1]-(crk*2 + (sum(pj[, -3]) - 4) * m)-2*kz*(pj[1,1]-1))/2
+      Co[, , i, 1] = t(tst$VECM1[[1]][crk*2 + (sum(pj[, -3]) - 4) * m + 1:dd, ])
+      Co[, , i, 2] = t(tst$VECM1[[1]][crk*2 + (sum(pj[, -3]) - 4) * m + dd +1:dd,])
+      Co[, , i, 1] = AB1[[3]]
+      Co[, , i, 2] = AB2[[3]]
+
+    }
+    if (type == "exog0") {
+      dd = (dim(tst$VECM1[[1]])[1]-(crk*2 + (sum(pj[, -3]) - 4) * m)-2*kz*(pj[1,1]-1))/2
+      Co[,-1, i, 1] =  t(tst$VECM1[[1]][crk*2 + (sum(pj[, -3]) - 4) * m + 1:dd, ])
+      Co[,-1, i, 2] =  t(tst$VECM1[[1]][crk*2 + (sum(pj[, -3]) - 4) * m + 1:dd, ])
+      Co[,-1, i, 1] =  AB1[[3]]
+      Co[,-1, i, 2] =  AB2[[3]]
+
+    }
   }
-
+  for (s in 1:S) Go[, , , s] = BoAoW2G(Bo[, , , , s], Ao[,
+                                                         , , , s], W, m, n, Pmax)
+  for (s in 1:S) Sigmao[, , s] = t(Uo[, , s]) %*% Uo[, , s]/sum(St[,
+                                                                   i] == s)
+  for (s in 1:S) {
+    for (i in 1:n) {
+      for (j in 1:n) Sigmao[(m * (i - 1) + 1):(i * m),
+                            (m * (j - 1) + 1):(j * m), s] = t(Uo[, (m * (i -
+                                                                           1) + 1):(i * m), s]) %*% Uo[, (m * (j - 1) +
+                                                                                                            1):(j * m), s]/sum((St[, i] == s) * (St[, j] ==
+                                                                                                                                                   s))
+    }
+  }
+  for (s in 1:S) {
+    for (ss in 1:S) {
+      for (i in 1:n) {
+        for (j in 1:n) SigmaS[((s - 1) * n * m + (i -
+                                                    1) * m + 1):((s - 1) * n * m + i * m), ((ss -
+                                                                                               1) * n * m + (j - 1) * m + 1):((ss - 1) * n *
+                                                                                                                                m + j * m)] = t(Uo[, (m * (i - 1) + 1):(i *
+                                                                                                                                                                          m), s]) %*% Uo[, (m * (j - 1) + 1):(j * m),
+                                                                                                                                                                                         ss]/sum((St[, i] == s) * (St[, j] == ss))
+      }
+    }
+  }
+  res$Go = Go
+  res$Sigmao = Sigmao
+  res$Ao = Ao
+  res$Bo = Bo
+  res$Co = Co
+  res$Do = Do
+  res$GDC = GDC
+  res$SigmaS = SigmaS
+  res$resid = Uo
+  res$VECM_domestic = VECM_domestic
+  ORAIC  = sum(ORAIC)
+  ORBIC  = sum(ORBIC)
+  ORLHP  = sum(ORLHP)
+  LH_BIC = sum(LH_BIC)
+  LH_AIC = sum(LH_AIC)
+  LH_P   = sum(LH_P)
+  Summary = list(VECM_domesticS,CRK_tst,r_npo,ORLHP,ORAIC,ORBIC,LH_P,LH_AIC,LH_BIC)
+  names(Summary) = c("Estimation_Result","CRK_Test","r_npo","One_Regeime_LH","One_Regime_AIC","One_Regime_BIC","LH_function_Value","AIC","BIC")
+  res$Summary = Summary
+  return(res)
+}
 
 
 
 
 #' Calculation of information criteria AIC and BIC for an estimated MRCIGVAR model
 #'
-#' @param  res  : an MRCIGVAR object generated from MRCIGVARData or estimated from MRCIGVARestm.
+#' @param  res  : an MRCIGVAR object generated from MRCIGVARData or estimated from MRCIGVARest.
 #' @param  L_V  : a 2 components vector containing the maxima of the domestic lag length and the foreign lag length respectively.
 #' @param  TH_V  : a vector containing possible threshold values .
 #' @return      a matrix with different lag specifications,  threshold values and the corresponding information criteria.
@@ -1047,7 +888,7 @@ MRCIGVARestm=function(res=res) {
 #'
 #' res_d <- MRCIGVARData(m=2,n=4,p=p,TH=TH,T=400,S=2, SESVI=c(1,3,5,7),r=rep(1,4))
 #'
-#' res_em = MRCIGVARestm(res=res_d)
+#' res_em = MRCIGVARest(res=res_d)
 #'
 #' L_v = c(3,3)
 #' TH_v = c(0,0.1)
@@ -1075,7 +916,7 @@ MRCIGVAR_Select = function(res,L_V=L_V,TH_V=TH_V)  {
             res_dd$p[i,2,s] = l_f
             res_dd$TH       = TH_V[l_th]
 
-            res_s = MRCIGVARestm(res_dd)
+            res_s = MRCIGVARest(res_dd)
             Criteria[idx,] = c(c(as.vector(res_dd$p),TH_V[l_th],s),res_s$Summary$AIC,res_s$Summary$BIC,res_s$Summary$One_Regime_AIC,res_s$Summary$One_Regime_BIC)
             #colnames(Criteria) = c("l_d","l_f","AIC","BIC","ORAIC","ORBIC")
           }
@@ -1090,7 +931,7 @@ MRCIGVAR_Select = function(res,L_V=L_V,TH_V=TH_V)  {
 #' Regime specific impulse response functions of an MRCIGVAR(m,n,p,S) model
 #'
 #' This function calculates the regime specific impulse response functions of an estimated MRCIGVAR(n,p,S,r). Using G\[,,,s\] and Sigma\[,,s\] matrices of the estimated MRCIGVAR, this function can produce impulse response functions for any possible combinations of states.
-#' @param res a MRCIGVAR object that can be an output of MRCIGVARData, MRCIGVARest, or MRCIGVARestm.
+#' @param res a MRCIGVAR object that can be an output of MRCIGVARData, MRCIGVARest, or MRCIGVARest.
 #' @param nstep the length of impulse response function
 #' @param comb a vector specify the concerted action in policy-simulation impulse response function
 #' @param state an n-vector specifying the specific state for each country.
@@ -1116,7 +957,7 @@ MRCIGVAR_Select = function(res,L_V=L_V,TH_V=TH_V)  {
 #' max(abs(res_d$Y))
 #' STAT(res_d$Go[,,,2])
 #' STAT(res_d$Go[,,,1])
-#' res_e  = MRCIGVARestm(res=res_d)
+#' res_e  = MRCIGVARest(res=res_d)
 #'
 #' res_e$Summary
 #'
@@ -1174,11 +1015,11 @@ irf_MRCIGVAR_CB <- function (res, nstep, comb, state = c(2, 1), irf = c("gen", "
     for (s in 1:S) Uo_run[, , s] = rnormSIGMA(T, sigmaNPDS)
     if (length(p) > 1) {
       res_run = MRCIGVARData(m, n, p, T, S, W, SESVI, TH, res$Go, Sigmao = Sigmao_sim, SV, type = "none")
-      res_e = MRCIGVARestm(res_run)
+      res_e = MRCIGVARest(res_run)
     }
     if (length(p) == 1) {
       res_run = MRGVARData(m, n, p, T, S, W, SESVI, TH, res$Go, Ao = NA, Bo = NA, Sigmao = NA, Uo = Uo_run, SV, type, res$Co, X)
-      res_e = MRCIGVARestm(res_run)
+      res_e = MRCIGVARest(res_run)
     }
     responseR[, , , i] <- irf_MRGVAR(res_e,state, nstep, comb, irf,G=NA,smat=NA,sigmaNPDS=SigmaNPD(res_e, state))
     GoColect[, , , , i] <- res_e$Go
@@ -1202,7 +1043,7 @@ irf_MRCIGVAR_CB <- function (res, nstep, comb, state = c(2, 1), irf = c("gen", "
 #'
 #' This function calculates the regime specific impulse response functions of an estimated MRCIGVAR(n,p,S).
 #' Using the estimated G\[,,,s\] and Sigma\[,,s\] matrices of the MRGVAR, this function calculated the regime speicfic impulse response functions.
-#' @param res a list of estimated MRCIGVAR as output of MRCIGVARest or MRCIGVARestm
+#' @param res a list of estimated MRCIGVAR as output of MRCIGVARest or MRCIGVARest
 #' @param nstep the length of impulse response function
 #' @param comb a vector specify the concerted action in policy-simulation impulse response function
 #' @param state an n vector specifying the speciic state for each country.
@@ -1226,7 +1067,7 @@ irf_MRCIGVAR_CB <- function (res, nstep, comb, state = c(2, 1), irf = c("gen", "
 #' max(abs(res_d$Y))
 #' STAT(res_d$Go[,,,2])
 #' STAT(res_d$Go[,,,1])
-#' res_e  = MRCIGVARestm(res=res_d)
+#' res_e  = MRCIGVARest(res=res_d)
 #'
 #' res_e$Summary
 #'
@@ -1265,7 +1106,7 @@ irf_MRCIGVAR = function(res,nstep,comb,state=state,irf=c("gen","chol","chol1","g
 #'
 #'                   GIRF(shock=SHCK) = mean(Y(resid)) - mean(Y(SHCK))
 #'
-#' @param  res   : an MRCIGVAR object containing the components of an output of MRCIGVARestm.
+#' @param  res   : an MRCIGVAR object containing the components of an output of MRCIGVARest.
 #' @param  shock : an mn-vector containing the shocks as impulse.
 #' @param  R     : the number of runs to integrate out the random effects in order to obtain the means (see equation above).
 #' @param  nstep : the length of the responses
@@ -1287,7 +1128,7 @@ irf_MRCIGVAR = function(res,nstep,comb,state=state,irf=c("gen","chol","chol1","g
 #' max(abs(res_d$Y))
 #' STAT(res_d$Go[,,,2])
 #' STAT(res_d$Go[,,,1])
-#' res_e  = MRCIGVARestm(res=res_d)
+#' res_e  = MRCIGVARest(res=res_d)
 #'
 #' STAT(res_e$Go[,,,2])
 #' STAT(res_e$Go[,,,1])
@@ -1410,7 +1251,7 @@ girf_MRCIGVAR_RM <- function(res,shock,R,nstep,Omega_hist=NA,resid_method) {
 #'
 #' It also generates the bootstrapped confidence intervals.
 #'
-#' @param  res   : a MRCIGVAR object containing the components of an output of MRCIGVARestm.
+#' @param  res   : a MRCIGVAR object containing the components of an output of MRCIGVARest.
 #' @param  shock : an mn-vector containing the shocks as impulse.
 #' @param  R     : the number of runs to integrate out the random effects in order to obtain the means (see equation above).
 #' @param  nstep : the length of the responses
@@ -1434,7 +1275,7 @@ girf_MRCIGVAR_RM <- function(res,shock,R,nstep,Omega_hist=NA,resid_method) {
 #' max(abs(res_d$Y))
 #' STAT(res_d$Go[,,,2])
 #' STAT(res_d$Go[,,,1])
-#' res_e  = MRCIGVARestm(res=res_d)
+#' res_e  = MRCIGVARest(res=res_d)
 #'
 #' STAT(res_e$Go[,,,2])
 #' STAT(res_e$Go[,,,1])
@@ -1483,7 +1324,7 @@ girf_MRCIGVAR_RM_CB <- function(res,shock,R,nstep,Omega_hist=NA,resid_method="pa
     #res_e   = MRGVARest(res_run)
     res_run  = MRCIGVARDataR(res)
     if (length(colnames(res_run$Y))==0) colnames(res_run$Y) = paste("res_runY",1:ncol(res_run$Y),sep="")
-    res_erun   = MRCIGVARestm(res_run)
+    res_erun   = MRCIGVARest(res_run)
     RF3     = girf_MRCIGVAR_RM(res=res_erun,shock,R,nstep,Omega_hist,resid_method)
     GIRF[,,,i]  = RF3
   }
@@ -1506,12 +1347,12 @@ girf_MRCIGVAR_RM_CB <- function(res,shock,R,nstep,Omega_hist=NA,resid_method="pa
 #'
 #' This function will generate data from a MRCIGVAR object. It will generate enough data for estimation purpose.
 #'
-#' @param res     : an output of MRCIGVARestm
+#' @param res     : an output of MRCIGVARest
 #' @return	: an MRCIGVAR object.
 #'
 #' @export
 MRCIGVARDataR <- function(res) {
-  ### res_e : an estimated MRGVAR model that is an output of MRCIGVARestm
+  ### res_e : an estimated MRGVAR model that is an output of MRCIGVARest
   ### T     : number of observations
   ### Remarks: MRCIGVARDataR is used in bootstrapping to generate sufficient observations such that in the regime of rare occurrence also contains
   ###          sufficient observations for estimation purposed
@@ -1549,4 +1390,38 @@ MRCIGVARDataR <- function(res) {
   }
   return(res_run)
 }
+
+
+
+
+
+#' Shift of Z2 regressors
+#'
+#' This function generates impulse response functions of an estimated CIGVAR(m,n,p) with confidence bands.
+#'
+#' @param  Z2 : Regressor's matrix to be shifted
+#' @param  kz : number of common exogenous factors
+#' @param  n1 : number of domestic variables
+#' @param  p  : the lag length of domestic variables in Z2 which is also the lag length of exogenous common factors
+#' @param  p2 : the lag length of foreign  variables in Z2
+#' @return a shifted Z2 if there are exogenous common factors. It returns Z2 without shift if there are no common factors.
+#'
+#' @export
+#'
+ShiftZ2m <- function(Z2,kz,n1,p,p2) {
+  if ((kz>0)&(p>0)) {
+    cc = (1:(kz*p))*0
+    for (j in 1:p) {
+      for (i in 1:kz) {
+        cc[(j-1)*kz+i] = (j-1)*(n1+kz)+i
+      }
+    }
+    ccc=c(cc,(p*(n1+kz)+p2*n1)+cc)
+    Z2 = cbind(Z2[,-ccc],Z2[,ccc])
+  }
+  return(Z2)
+}
+
+
+
 

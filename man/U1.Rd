@@ -7,8 +7,8 @@
 U1(
   B,
   sigma,
-  irf = c("gen", "chol", "chol1", "gen1", "genN1", "comb", "comb1", "smat",
-    "concerts1", "concerts0", "concertc"),
+  irf = c("gen", "chol", "chol1", "gen1", "genN1", "comb", "comb1", "smat", "concerts1",
+    "concerts0", "concertc"),
   comb,
   G = NA,
   smat = NA
